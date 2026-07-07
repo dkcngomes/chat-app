@@ -1,12 +1,13 @@
 import * as signalR from "@microsoft/signalr";
 
 let connection: signalR.HubConnection | null = null;
+const HUB_URL = `${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5223"}/hubs/chat`;
 
 export function getHub(): signalR.HubConnection {
     if (!connection) {
         const token = localStorage.getItem("token");
         connection = new signalR.HubConnectionBuilder()
-            .withUrl("http://192.168.1.102:5000/hubs/chat", {
+            .withUrl(HUB_URL, {
                 accessTokenFactory: () => token || "",
             })
             .withAutomaticReconnect()

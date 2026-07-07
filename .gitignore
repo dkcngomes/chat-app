@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+**/dist/
+**/node_modules/
+**/.tsbuildinfo/
+
+backend/chat.db
+backend/chat.db-shm
+backend/chat.db-wal
+backend/backend.log
+backend/publish-test/
+backend/wwwroot/uploads/
+
+.env
+.env.*
+!.env.example

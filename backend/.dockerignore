@@ -1,0 +1,8 @@
+bin/
+obj/
+publish-test/
+chat.db
+chat.db-shm
+chat.db-wal
+backend.log
+wwwroot/uploads/

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { chatApi } from "../services/api";
-import { getHub, joinRoom, leaveRoom, sendMessage, sendImage, onMessageReceived } from "../services/signalr";
+import { API_ORIGIN, chatApi } from "../services/api";
+import { joinRoom, leaveRoom, sendMessage, sendImage, onMessageReceived } from "../services/signalr";
 import type { ChatRoom, Message, UserInfo } from "../types";
 
 export default function ChatPage() {
@@ -11,9 +11,7 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [showCreate, setShowCreate] = useState(false);
-    const [newRoomName, setNewRoomName] = useState("");
     const [users, setUsers] = useState<UserInfo[]>([]);
-    const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
     const msgEndRef = useRef<HTMLDivElement>(null);
     const username = localStorage.getItem("username") || "";
     const userId = parseInt(localStorage.getItem("userId") || "0");
@@ -32,10 +30,18 @@ export default function ChatPage() {
         const handleBeforeUnload = () => {
             if (!sessionEnded.current) {
                 sessionEnded.current = true;
-                navigator.sendBeacon("http://192.168.1.102:5000/api/chat/sessions/end",
-                    localStorage.getItem("token")
-                        ? JSON.stringify({})
-                        : null);
+                const token = localStorage.getItem("token");
+                if (token) {
+                    fetch(`${API_ORIGIN}/api/chat/sessions/end`, {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                        body: "{}",
+                        keepalive: true,
+                    }).catch(() => {});
+                }
             }
         };
         window.addEventListener("beforeunload", handleBeforeUnload);
@@ -107,12 +113,6 @@ export default function ChatPage() {
         chatApi.endSession().catch(() => {});
         localStorage.clear();
         navigate("/");
-    }
-
-    function toggleMember(id: number) {
-        setSelectedMembers((prev) =>
-            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-        );
     }
 
     const formatTime = (ts: string) => {
@@ -192,7 +192,7 @@ export default function ChatPage() {
                                             {m.content && <p>{m.content}</p>}
                                             {m.imageUrl && (
                                                 <img
-                                                    src={`http://192.168.1.102:5000${m.imageUrl}`}
+                                                    src={`${API_ORIGIN}${m.imageUrl}`}
                                                     alt="shared"
                                                     style={{ maxWidth: 300, borderRadius: 8 }}
                                                 />
