@@ -16,7 +16,7 @@ jobs:
       - name: Push backend folder to Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE_REPO: ${{ secrets.HF_SPACE_REPO }}
+          HF_SPACE_REPO: ${{ secrets.HF_SPACE_REPO || 'nipunadkcn/chat-app' }}
         run: |
           test -n "$HF_TOKEN"
           test -n "$HF_SPACE_REPO"
