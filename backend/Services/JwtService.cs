@@ -16,8 +16,11 @@ public class JwtService
 
     public string GenerateToken(int userId, string username)
     {
+        var jwtKey = _config["Jwt:Key"];
+        if (string.IsNullOrWhiteSpace(jwtKey))
+            jwtKey = "SuperSecretKeyForDev12345678901234567890";
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? "SuperSecretKeyForDev12345678901234567890"));
+            Encoding.UTF8.GetBytes(jwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
