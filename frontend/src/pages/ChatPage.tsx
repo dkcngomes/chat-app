@@ -86,8 +86,12 @@ export default function ChatPage() {
     async function handleSend(e: React.FormEvent) {
         e.preventDefault();
         if (!input.trim() || !activeRoom) return;
-        await sendMessage(activeRoom.id, input);
-        setInput("");
+        try {
+            await sendMessage(activeRoom.id, input);
+            setInput("");
+        } catch (err) {
+            console.error("Failed to send message:", err);
+        }
     }
 
     async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
