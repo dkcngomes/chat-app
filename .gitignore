@@ -9,6 +9,7 @@ backend/chat.db
 backend/chat.db-shm
 backend/chat.db-wal
 backend/backend.log
+backend/backend_dm.log
 backend/publish-test/
 backend/wwwroot/uploads/
 
