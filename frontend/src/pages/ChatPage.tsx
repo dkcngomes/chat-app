@@ -17,6 +17,7 @@ export default function ChatPage() {
     const userId = parseInt(localStorage.getItem("userId") || "0");
     const fileRef = useRef<HTMLInputElement>(null);
     const sessionEnded = useRef(false);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     useEffect(() => {
         if (!localStorage.getItem("token")) {
@@ -86,11 +87,16 @@ export default function ChatPage() {
     }
 
     async function selectRoom(room: ChatRoom) {
+        closeMenu();
         if (activeRoom) await leaveRoom(activeRoom.id);
         setActiveRoom(room);
         const msgs = await chatApi.getMessages(room.id);
         setMessages(msgs);
         await joinRoom(room.id);
+    }
+
+    function closeMenu() {
+        setMenuOpen(false);
     }
 
     async function handleSend(e: React.FormEvent) {
@@ -136,10 +142,17 @@ export default function ChatPage() {
 
     return (
         <div className="chat-page">
+            {/* Overlay backdrop for mobile sidebar */}
+            <div
+                className={`sidebar-overlay ${menuOpen ? "open" : ""}`}
+                onClick={() => setMenuOpen(false)}
+            />
+
             {/* Sidebar */}
-            <aside className="sidebar">
+            <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
                 <div className="sidebar-header">
                     <h2>Chats</h2>
+                    <button className="close-sidebar" onClick={() => setMenuOpen(false)}>✕</button>
                     <div className="sidebar-actions">
                         <button onClick={async () => {
                             const u = await chatApi.getUsers();
@@ -190,6 +203,7 @@ export default function ChatPage() {
                 {activeRoom ? (
                     <>
                         <div className="chat-header">
+                            <button className="hamburger" onClick={() => setMenuOpen(true)}>☰</button>
                             <h3>{activeRoom.name}</h3>
                             <span className="badge">{activeRoom.type}</span>
                         </div>
@@ -252,6 +266,7 @@ export default function ChatPage() {
                     </>
                 ) : (
                     <div className="no-room">
+                        <button className="hamburger hamburger-no-room" onClick={() => setMenuOpen(true)}>☰</button>
                         <h2>Welcome, {username}!</h2>
                         <p>Select a chat room or create a new one to start messaging.</p>
                     </div>
