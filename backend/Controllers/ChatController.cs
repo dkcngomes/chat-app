@@ -86,8 +86,13 @@ public class ChatController : ControllerBase
 
         if (room != null)
         {
+            // Reload members with User nav for usernames
+            await _db.Entry(room).Collection(r => r.Members).LoadAsync();
+            foreach (var m in room.Members)
+                await _db.Entry(m).Reference(x => x.User).LoadAsync();
+
             return Ok(new ChatRoomDto(room.Id, room.Name, room.Type, room.CreatedAt,
-                room.Members.Select(m => m.User.Username).ToList()));
+                room.Members.Select(m => m.User?.Username ?? "").ToList()));
         }
 
         // Create new one
@@ -108,8 +113,13 @@ public class ChatController : ControllerBase
         _db.ChatRooms.Add(newRoom);
         await _db.SaveChangesAsync();
 
+        // Reload with user nav properties
+        await _db.Entry(newRoom).Collection(r => r.Members).LoadAsync();
+        foreach (var m in newRoom.Members)
+            await _db.Entry(m).Reference(x => x.User).LoadAsync();
+
         return Ok(new ChatRoomDto(newRoom.Id, newRoom.Name, newRoom.Type, newRoom.CreatedAt,
-            newRoom.Members.Select(m => m.User.Username).ToList()));
+            newRoom.Members.Select(m => m.User?.Username ?? "").ToList()));
     }
 
     [HttpGet("rooms/{roomId}/messages")]
