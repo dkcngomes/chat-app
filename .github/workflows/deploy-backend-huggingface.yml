@@ -25,6 +25,7 @@ jobs:
           git clone "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE_REPO}" space
           rsync -a --delete \
             --exclude ".git" \
+            --exclude ".vs" \
             --exclude "bin" \
             --exclude "obj" \
             --exclude "publish-test" \
