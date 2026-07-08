@@ -5,10 +5,10 @@ let startPromise: Promise<void> | null = null;
 const HUB_URL = `${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5223"}/hubs/chat`;
 
 function createHub(): signalR.HubConnection {
-    const token = localStorage.getItem("token");
     const hub = new signalR.HubConnectionBuilder()
         .withUrl(HUB_URL, {
-            accessTokenFactory: () => token || "",
+            accessTokenFactory: () => localStorage.getItem("token") || "",
+            withCredentials: false,
         })
         .withAutomaticReconnect()
         .build();
