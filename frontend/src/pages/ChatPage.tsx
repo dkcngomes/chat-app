@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ORIGIN, chatApi } from "../services/api";
-import { joinRoom, leaveRoom, sendMessage, sendImage, onMessageReceived } from "../services/signalr";
+import { joinRoom, leaveRoom, sendMessage, sendImage, onMessageReceived, onRoomCreated } from "../services/signalr";
 import type { ChatRoom, Message, UserInfo } from "../types";
 
 export default function ChatPage() {
@@ -62,6 +62,16 @@ export default function ChatPage() {
             }
         });
     }, [activeRoom]);
+
+    // Listen for new rooms created by other users (DM / group)
+    useEffect(() => {
+        onRoomCreated((room: ChatRoom) => {
+            setRooms((prev) => {
+                if (prev.find((r) => r.id === room.id)) return prev;
+                return [...prev, room];
+            });
+        });
+    }, []);
 
     useEffect(() => {
         msgEndRef.current?.scrollIntoView({ behavior: "smooth" });

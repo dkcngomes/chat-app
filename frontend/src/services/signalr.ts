@@ -58,3 +58,10 @@ export function onMessageReceived(callback: (message: any) => void) {
     hub.off("ReceiveMessage");
     hub.on("ReceiveMessage", callback);
 }
+
+/** Listen for new room created events (DM or group). */
+export function onRoomCreated(callback: (room: any) => void) {
+    const hub = getHub();
+    hub.off("RoomCreated");
+    hub.on("RoomCreated", callback);
+}

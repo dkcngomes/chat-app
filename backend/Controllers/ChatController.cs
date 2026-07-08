@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.DTOs;
+using backend.Hubs;
 using backend.Models;
 using System.Security.Claims;
 
@@ -15,11 +17,13 @@ public class ChatController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IWebHostEnvironment _env;
+    private readonly IHubContext<ChatHub> _hubContext;
 
-    public ChatController(AppDbContext db, IWebHostEnvironment env)
+    public ChatController(AppDbContext db, IWebHostEnvironment env, IHubContext<ChatHub> hubContext)
     {
         _db = db;
         _env = env;
+        _hubContext = hubContext;
     }
 
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -69,8 +73,29 @@ public class ChatController : ControllerBase
         _db.ChatRooms.Add(room);
         await _db.SaveChangesAsync();
 
-        return Ok(new ChatRoomDto(room.Id, room.Name, room.Type, room.CreatedAt,
-            room.Members.Select(m => m.User?.Username ?? "").ToList()));
+        // Reload with user nav properties
+        await _db.Entry(room).Collection(r => r.Members).LoadAsync();
+        foreach (var m in room.Members)
+            await _db.Entry(m).Reference(x => x.User).LoadAsync();
+
+        var dto = new ChatRoomDto(room.Id, room.Name, room.Type, room.CreatedAt,
+            room.Members.Select(m => m.User?.Username ?? "").ToList());
+
+        // Notify all other members in real-time
+        foreach (var memberId in req.MemberIds.Distinct().Where(id => id != UserId))
+        {
+            try
+            {
+                await _hubContext.Clients.User(memberId.ToString())
+                    .SendAsync("RoomCreated", dto);
+            }
+            catch
+            {
+                // Offline — fine
+            }
+        }
+
+        return Ok(dto);
     }
 
     [HttpPost("rooms/dm/{targetUserId}")]
@@ -118,8 +143,21 @@ public class ChatController : ControllerBase
         foreach (var m in newRoom.Members)
             await _db.Entry(m).Reference(x => x.User).LoadAsync();
 
-        return Ok(new ChatRoomDto(newRoom.Id, newRoom.Name, newRoom.Type, newRoom.CreatedAt,
-            newRoom.Members.Select(m => m.User?.Username ?? "").ToList()));
+        var dto = new ChatRoomDto(newRoom.Id, newRoom.Name, newRoom.Type, newRoom.CreatedAt,
+            newRoom.Members.Select(m => m.User?.Username ?? "").ToList());
+
+        // Notify the target user in real-time so the DM room appears in their sidebar
+        try
+        {
+            await _hubContext.Clients.User(targetUserId.ToString())
+                .SendAsync("RoomCreated", dto);
+        }
+        catch
+        {
+            // If the target user is offline, that's fine — they'll see it on refresh
+        }
+
+        return Ok(dto);
     }
 
     [HttpGet("rooms/{roomId}/messages")]
