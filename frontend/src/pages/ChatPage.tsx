@@ -218,7 +218,7 @@ export default function ChatPage() {
                                     className="room-close-btn"
                                     onClick={async (e) => {
                                         e.stopPropagation();
-                                        if (confirm(`Close "${r.name}"? The transcript will be emailed to the admin.`)) {
+                                        if (confirm('Are you sure , you want to close this chat?')) {
                                             try {
                                                 await chatApi.closeRoom(r.id);
                                                 setRooms((prev) =>
@@ -260,7 +260,7 @@ export default function ChatPage() {
                                 <button
                                     className="close-chat-btn"
                                     onClick={async () => {
-                                        if (confirm(`Close "${activeRoom.name}"? The transcript will be emailed.`)) {
+                                        if (confirm('Are you sure , you want to close this chat?')) {
                                             try {
                                                 await chatApi.closeRoom(activeRoom.id);
                                                 setRooms((prev) =>
