@@ -10,6 +10,7 @@ export interface ChatRoom {
     type: string;
     createdAt: string;
     members: string[];
+    isClosed: boolean;
 }
 
 export interface Message {

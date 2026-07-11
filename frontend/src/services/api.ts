@@ -47,6 +47,11 @@ export const chatApi = {
             method: "POST",
         }),
 
+    closeRoom: (roomId: number) =>
+        request<{ message: string }>(`/chat/rooms/${roomId}/close`, {
+            method: "POST",
+        }),
+
     getMessages: (roomId: number) =>
         request<import("../types").Message[]>(`/chat/rooms/${roomId}/messages`),
 

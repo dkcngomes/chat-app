@@ -44,7 +44,8 @@ public class AppDbContext : DbContext
             Id = 1,
             Name = "General",
             Type = "public",
-            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            IsClosed = false
         });
     }
 }

@@ -368,6 +368,7 @@ body {
     cursor: pointer;
     transition: background 0.2s;
     margin-bottom: 2px;
+    position: relative;
 }
 
 .room-item:hover {
@@ -376,6 +377,39 @@ body {
 
 .room-item.active {
     background: #1e2a5c;
+}
+
+.room-item.closed {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.room-close-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 107, 107, 0.15);
+    border: none;
+    color: #ff6b6b;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    opacity: 0;
+}
+
+.room-item:hover .room-close-btn {
+    opacity: 1;
+}
+
+.room-close-btn:hover {
+    background: rgba(255, 107, 107, 0.3);
 }
 
 .room-icon {
@@ -481,6 +515,7 @@ body {
 .chat-header h3 {
     font-size: 18px;
     color: #fff;
+    flex: 1;
 }
 
 .badge {
@@ -490,6 +525,29 @@ body {
     background: #2d3a5c;
     color: #8892b0;
     text-transform: uppercase;
+}
+
+.closed-badge {
+    background: #3a2a2a;
+    color: #ff6b6b;
+}
+
+.close-chat-btn {
+    padding: 6px 14px;
+    background: rgba(255, 107, 107, 0.15);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    color: #ff6b6b;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.close-chat-btn:hover {
+    background: rgba(255, 107, 107, 0.25);
+    border-color: #ff6b6b;
 }
 
 .messages {

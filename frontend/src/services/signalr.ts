@@ -65,3 +65,10 @@ export function onRoomCreated(callback: (room: any) => void) {
     hub.off("RoomCreated");
     hub.on("RoomCreated", callback);
 }
+
+/** Listen for room closed events (DM closed by other user). */
+export function onRoomClosed(callback: (data: { roomId: number; roomName: string }) => void) {
+    const hub = getHub();
+    hub.off("RoomClosed");
+    hub.on("RoomClosed", callback);
+}

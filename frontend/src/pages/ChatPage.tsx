@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ORIGIN, chatApi } from "../services/api";
-import { joinRoom, leaveRoom, sendMessage, sendImage, onMessageReceived, onRoomCreated } from "../services/signalr";
+import { joinRoom, leaveRoom, sendMessage, sendImage, onMessageReceived, onRoomCreated, onRoomClosed } from "../services/signalr";
 import type { ChatRoom, Message, UserInfo } from "../types";
 
 export default function ChatPage() {
@@ -73,6 +73,22 @@ export default function ChatPage() {
             });
         });
     }, []);
+
+    // Listen for rooms closed by the other user
+    useEffect(() => {
+        onRoomClosed((data: { roomId: number; roomName: string }) => {
+            setRooms((prev) =>
+                prev.map((r) =>
+                    r.id === data.roomId ? { ...r, isClosed: true } : r
+                )
+            );
+            // If currently viewing this room, deselect
+            if (activeRoom?.id === data.roomId) {
+                setActiveRoom(null);
+                setMessages([]);
+            }
+        });
+    }, [activeRoom]);
 
     useEffect(() => {
         msgEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,14 +197,48 @@ export default function ChatPage() {
                     {rooms.map((r) => (
                         <div
                             key={r.id}
-                            className={`room-item ${activeRoom?.id === r.id ? "active" : ""}`}
-                            onClick={() => selectRoom(r)}
+                            className={`room-item ${activeRoom?.id === r.id ? "active" : ""} ${r.isClosed ? "closed" : ""}`}
+                            onClick={() => {
+                                if (!r.isClosed) selectRoom(r);
+                            }}
                         >
-                            <span className="room-icon">{r.type === "public" ? "🏠" : "🔒"}</span>
+                            <span className="room-icon">{r.isClosed ? "🔴" : r.type === "public" ? "🏠" : "🔒"}</span>
                             <div>
                                 <strong>{r.name}</strong>
-                                <small>{r.type === "public" ? "Public Room" : `${r.members.length} members`}</small>
+                                <small>
+                                    {r.isClosed
+                                        ? "Closed"
+                                        : r.type === "public"
+                                            ? "Public Room"
+                                            : `${r.members.length} members`}
+                                </small>
                             </div>
+                            {r.type === "private" && !r.isClosed && (
+                                <button
+                                    className="room-close-btn"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (confirm(`Close "${r.name}"? The transcript will be emailed to the admin.`)) {
+                                            try {
+                                                await chatApi.closeRoom(r.id);
+                                                setRooms((prev) =>
+                                                    prev.map((rr) =>
+                                                        rr.id === r.id ? { ...rr, isClosed: true } : rr
+                                                    )
+                                                );
+                                                if (activeRoom?.id === r.id) {
+                                                    setActiveRoom(null);
+                                                    setMessages([]);
+                                                }
+                                            } catch (err) {
+                                                alert("Failed to close room.");
+                                            }
+                                        }
+                                    }}
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
                     ))}
                 </nav>
@@ -206,6 +256,30 @@ export default function ChatPage() {
                             <button className="hamburger" onClick={() => setMenuOpen(true)}>☰</button>
                             <h3>{activeRoom.name}</h3>
                             <span className="badge">{activeRoom.type}</span>
+                            {activeRoom.type === "private" && !activeRoom.isClosed && (
+                                <button
+                                    className="close-chat-btn"
+                                    onClick={async () => {
+                                        if (confirm(`Close "${activeRoom.name}"? The transcript will be emailed.`)) {
+                                            try {
+                                                await chatApi.closeRoom(activeRoom.id);
+                                                setRooms((prev) =>
+                                                    prev.map((r) =>
+                                                        r.id === activeRoom.id ? { ...r, isClosed: true } : r
+                                                    )
+                                                );
+                                                setActiveRoom(null);
+                                                setMessages([]);
+                                            } catch {
+                                                alert("Failed to close room.");
+                                            }
+                                        }
+                                    }}
+                                >
+                                    ✕ Close Chat
+                                </button>
+                            )}
+                            {activeRoom.isClosed && <span className="badge closed-badge">Closed</span>}
                         </div>
 
                         <div className="messages">
