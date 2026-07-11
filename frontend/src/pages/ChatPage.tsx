@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_ORIGIN, chatApi } from "../services/api";
-import { joinRoom, leaveRoom, sendMessage, sendImage, onMessageReceived, onRoomCreated, onRoomClosed } from "../services/signalr";
+import { joinRoom, leaveRoom, sendMessage, sendImage, onMessageReceived, onRoomCreated, onRoomClosed, onRoomOnlineCount } from "../services/signalr";
 import type { ChatRoom, Message, UserInfo } from "../types";
 
 export default function ChatPage() {
@@ -18,6 +18,7 @@ export default function ChatPage() {
     const fileRef = useRef<HTMLInputElement>(null);
     const sessionEnded = useRef(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [onlineCount, setOnlineCount] = useState(0);
 
     useEffect(() => {
         if (!localStorage.getItem("token")) {
@@ -86,6 +87,15 @@ export default function ChatPage() {
             if (activeRoom?.id === data.roomId) {
                 setActiveRoom(null);
                 setMessages([]);
+            }
+        });
+    }, [activeRoom]);
+
+    // Listen for real-time online user count
+    useEffect(() => {
+        onRoomOnlineCount((data: { roomId: number; count: number }) => {
+            if (data.roomId === activeRoom?.id) {
+                setOnlineCount(data.count);
             }
         });
     }, [activeRoom]);
@@ -256,6 +266,9 @@ export default function ChatPage() {
                             <button className="hamburger" onClick={() => setMenuOpen(true)}>☰</button>
                             <h3>{activeRoom.name}</h3>
                             <span className="badge">{activeRoom.type}</span>
+                            {onlineCount > 0 && (
+                                <span className="online-badge" title="Active users">🟢 {onlineCount}</span>
+                            )}
                             {activeRoom.type === "private" && !activeRoom.isClosed && (
                                 <button
                                     className="close-chat-btn"

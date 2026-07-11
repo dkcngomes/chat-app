@@ -72,3 +72,10 @@ export function onRoomClosed(callback: (data: { roomId: number; roomName: string
     hub.off("RoomClosed");
     hub.on("RoomClosed", callback);
 }
+
+/** Listen for real-time online user count per room. */
+export function onRoomOnlineCount(callback: (data: { roomId: number; count: number }) => void) {
+    const hub = getHub();
+    hub.off("RoomOnlineCount");
+    hub.on("RoomOnlineCount", callback);
+}
