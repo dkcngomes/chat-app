@@ -78,7 +78,7 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <h1>Welcome! 👋</h1>
+                <h1>කාමරේ චැට්</h1>
                 <p className="subtitle">Pick a cool name and jump in!</p>
 
                 <form onSubmit={handleSubmit}>
