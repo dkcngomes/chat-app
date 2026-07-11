@@ -184,14 +184,14 @@ export default function ChatPage() {
                             const u = await chatApi.getUsers();
                             setUsers(u);
                             setShowCreate(true);
-                        }}>➕ කාමරයක් ගන්න</button>
+                        }}>➕ කාමරය/Room </button>
                         <button className="logout-btn" onClick={handleLogout}>Logout</button>
                     </div>
                 </div>
 
                 {showCreate && (
                     <div className="create-room">
-                        <h3>සගයා තෝරන්න.</h3>
+                        <h3>සගයා තෝරන්න/Partner</h3>
                         <div className="member-list">
                             {users.map((u) => (
                                 <div key={u.id} className="member-item" onClick={() => startDM(u.id)}>
@@ -219,7 +219,7 @@ export default function ChatPage() {
                                     {r.isClosed
                                         ? "Closed"
                                         : r.type === "public"
-                                            ? "පොදු කාමරේ"
+                                            ? "මැද සාලේ/Living Room"
                                             : `${r.members.length} members`}
                                 </small>
                             </div>
