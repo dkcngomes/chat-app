@@ -6,6 +6,7 @@ using backend.Data;
 using backend.DTOs;
 using backend.Hubs;
 using backend.Models;
+using backend.Services;
 using System.Security.Claims;
 
 namespace backend.Controllers;
@@ -294,7 +295,7 @@ public class ChatController : ControllerBase
                 var attachments = messages
                     .Where(m => m.MessageType == "image" && !string.IsNullOrEmpty(m.ImagePath))
                     .Select(m => Path.Combine(env.ContentRootPath, "wwwroot", "uploads", m.ImagePath))
-                    .Where(p => File.Exists(p))
+                    .Where(p => System.IO.File.Exists(p))
                     .ToList();
 
                 var toEmail = config["Email:DefaultTranscriptEmail"] ?? "chatlankainfo@gmail.com";
@@ -304,7 +305,7 @@ public class ChatController : ControllerBase
                     var transcriptDir = Path.Combine(env.ContentRootPath, "transcripts");
                     Directory.CreateDirectory(transcriptDir);
                     var filePath = Path.Combine(transcriptDir, $"room_{roomId}_{fullRoom.ClosedAt:yyyyMMddHHmmss}.html");
-                    await File.WriteAllTextAsync(filePath, html);
+                    await System.IO.File.WriteAllTextAsync(filePath, html);
                     return;
                 }
 
