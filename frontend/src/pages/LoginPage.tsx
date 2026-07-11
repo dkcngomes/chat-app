@@ -79,7 +79,7 @@ export default function LoginPage() {
                 </div>
 
                 <h1>කාමරේ චැට්</h1>
-                <p className="subtitle">Pick a cool name and jump in!</p>
+                <p className="subtitle">ඔබ කැමති නමක් තෝරා ගන්න.</p>
 
                 <form onSubmit={handleSubmit}>
                     <div className="input-wrapper">
@@ -102,16 +102,16 @@ export default function LoginPage() {
                 </form>
 
                 <p className="hint">
-                    🔒Always Stay Anonymous , And Enjoy !
+                    🔒සැමවිටම නිර්නාමිකව සිටින්න, විනෝද වන්න!
                 </p>
 
                 <div className="disclaimer">
                     <p className="disclaimer-title">📋 Disclaimer</p>
                     <p className="disclaimer-agree">By clicking "Enter Chat" you agree to the following conditions:</p>
                     <ul>
-                        <li>Do not share personal, financial, or sensitive information</li>
-                        <li>Be respectful — treat others as you'd like to be treated</li>
-                        <li>This site is not liable for any misuse or careless actions by users</li>
+                        <li>පුද්ගලික, මූල්‍යමය හෝ සංවේදී තොරතුරු බෙදා නොගන්න</li>
+                        <li>ගෞරවනීය වන්න , ඔබට සැලකීමට කැමති ආකාරයට අන් අයට සලකන්න.</li>
+                        <li>පරිශීලකයින් විසින් කරන ලද කිසිදු අනිසි භාවිතයක් හෝ නොසැලකිලිමත් ක්‍රියාවක් සඳහා මෙම වෙබ් අඩවිය වගකිව යුතු නොවේ.</li>
                     </ul>
                 </div>
             </div>
