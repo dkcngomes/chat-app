@@ -58,9 +58,22 @@
   .msg .content img { max-width: 240px; border-radius: 6px; margin-top: 6px; display: block; }
   .msg-empty { text-align: center; padding: 40px; color: #555; }
 
-  .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .nav-bar button { background: none; border: 1px solid #333; color: #ccc; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+  .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+  .nav-bar h1 { margin-bottom: 0; }
+  .nav-bar .nav-actions { display: flex; align-items: center; gap: 8px; }
+  .nav-bar button { background: none; border: 1px solid #333; color: #ccc; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
   .nav-bar button:hover { border-color: #ff6b6b; color: #ff6b6b; }
+  .nav-bar button.logout-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
+
+  /* Live indicator */
+  .live-indicator { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 12px; cursor: pointer; user-select: none; }
+  .live-indicator.on { background: #1a3a2a; color: #4ade80; border: 1px solid #2a5a3a; }
+  .live-indicator.off { background: #3a2a2a; color: #f87171; border: 1px solid #5a3a3a; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .live-indicator.on .live-dot { background: #4ade80; animation: pulse-dot 1.5s ease-in-out infinite; }
+  .live-indicator.off .live-dot { background: #f87171; }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .live-indicator .live-label { font-size: 0.7rem; color: inherit; }
 </style>
 </head>
 <body>
@@ -69,17 +82,17 @@
 <script>
 // ── Config ──
 const API = window.location.origin + '/api/admin';
+const REFRESH_MS = 5000; // 5 seconds
 let adminKey = localStorage.getItem('admin_key') || '';
+let refreshInterval = null;
+let autoRefresh = true;
 
 // ── Helpers ──
-function $(sel, parent) { return (parent || document).querySelector(sel); }
-function $$(sel, parent) { return [...(parent || document).querySelectorAll(sel)]; }
-
 function apiUrl(path) { return API + path + (path.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(adminKey); }
 
 async function fetchJson(path) {
   const res = await fetch(apiUrl(path));
-  if (res.status === 401) { adminKey = ''; localStorage.removeItem('admin_key'); render(); throw new Error('Unauthorized'); }
+  if (res.status === 401) { adminKey = ''; localStorage.removeItem('admin_key'); stopRefresh(); render(); throw new Error('Unauthorized'); }
   if (!res.ok) { const err = await res.json().catch(() => ({ error: res.statusText })); throw new Error(err.error || res.statusText); }
   return res.json();
 }
@@ -105,6 +118,140 @@ function fmtTime(ts) {
 function esc(str) {
   if (!str) return '';
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── Refresh ──
+function stopRefresh() {
+  if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
+}
+
+function startRefresh(fn) {
+  stopRefresh();
+  if (!autoRefresh) return;
+  refreshInterval = setInterval(fn, REFRESH_MS);
+}
+
+function toggleAutoRefresh() {
+  autoRefresh = !autoRefresh;
+  if (autoRefresh) {
+    // Refresh immediately then start interval
+    if (state === 'messages' && currentRoomId) refreshMessages();
+    else refreshRooms();
+    startRefresh(state === 'messages' ? refreshMessages : refreshRooms);
+  } else {
+    stopRefresh();
+  }
+  updateLiveIndicator();
+}
+
+function updateLiveIndicator() {
+  const dot = document.getElementById('live-dot');
+  const label = document.getElementById('live-label');
+  const indicator = document.getElementById('live-indicator');
+  if (!dot || !label || !indicator) return;
+  if (autoRefresh) {
+    indicator.className = 'live-indicator on';
+    dot.className = 'live-dot';
+    label.textContent = 'LIVE';
+  } else {
+    indicator.className = 'live-indicator off';
+    dot.className = 'live-dot';
+    label.textContent = 'PAUSED';
+  }
+}
+
+// ── Data refresh functions (no loading spinner — silent background update) ──
+
+async function refreshRooms() {
+  try {
+    const rooms = await fetchJson('/rooms');
+    if (state !== 'rooms') return; // stale
+    const totalMsgs = rooms.reduce((s, r) => s + r.messageCount, 0);
+    const openRooms = rooms.filter(r => !r.isClosed).length;
+
+    // Update stats
+    const statsEls = document.querySelectorAll('.stat-card .num');
+    if (statsEls.length >= 3) {
+      statsEls[0].textContent = rooms.length;
+      statsEls[1].textContent = openRooms;
+      statsEls[2].textContent = totalMsgs;
+    }
+
+    // Update room cards — re-render the grid
+    const grid = document.querySelector('.room-grid');
+    if (!grid) return;
+    const prevScroll = window.scrollY;
+    grid.innerHTML = rooms.map(r => {
+      const badge = r.isClosed ? 'badge-closed' : (r.type === 'public' ? 'badge-public' : 'badge-private');
+      const label = r.isClosed ? 'Closed' : (r.type === 'public' ? 'Public' : 'Private');
+      return `
+        <div class="room-card" onclick="viewRoom(${r.id})">
+          <div class="top">
+            <span class="name">${esc(r.name)}</span>
+            <span class="badge ${badge}">${label}</span>
+          </div>
+          <div class="meta">
+            <span>💬 ${r.messageCount} messages</span>
+            <span>👥 ${r.memberCount} members</span>
+            <span>📅 ${fmtTime(r.createdAt)}</span>
+            ${r.lastMessageAt ? `<span>🕐 last ${ago(r.lastMessageAt)}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    window.scrollTo(0, prevScroll);
+  } catch (e) {
+    // Silently ignore refresh errors to avoid flickering
+  }
+}
+
+async function refreshMessages() {
+  if (!currentRoomId) return;
+  try {
+    const data = await fetchJson('/rooms/' + currentRoomId + '/messages');
+    if (state !== 'messages' || currentRoomId !== data.room.id) return; // stale
+
+    const room = data.room;
+    const msgs = data.messages;
+    const list = document.querySelector('.msg-list');
+    if (!list) return;
+
+    // Update room info message count
+    const infoEl = document.querySelector('.room-info .row');
+    if (infoEl) {
+      infoEl.innerHTML = `
+        <span>👥 ${room.members.join(', ')}</span>
+        <span>💬 ${msgs.length} messages</span>
+        <span>📅 Created ${fmtTime(room.createdAt)}</span>
+      `;
+    }
+
+    // Rebuild message list
+    const prevScroll = window.scrollY;
+    if (msgs.length === 0) {
+      list.innerHTML = '<div class="msg-empty">No messages in this room yet.</div>';
+    } else {
+      list.innerHTML = msgs.map(m => {
+        let content = esc(m.content);
+        let img = '';
+        if (m.messageType === 'image' && m.imageUrl) {
+          img = `<img src="${API.replace('/api/admin', '')}${esc(m.imageUrl)}" alt="chat image" />`;
+        }
+        return `
+          <div class="msg">
+            <div class="head">
+              <span class="sender">${esc(m.sender)}</span>
+              <span class="time">${fmtTime(m.timestamp)}</span>
+            </div>
+            <div class="content">${content}${img}</div>
+          </div>
+        `;
+      }).join('');
+    }
+    window.scrollTo(0, prevScroll);
+  } catch (e) {
+    // Silently ignore refresh errors
+  }
 }
 
 // ── Renderers ──
@@ -144,10 +291,20 @@ function renderRooms(data) {
     `;
   }).join('');
 
+  // Build live indicator HTML
+  const liveClass = autoRefresh ? 'on' : 'off';
+  const liveLabel = autoRefresh ? 'LIVE' : 'PAUSED';
+
   return `
     <div class="nav-bar">
       <h1>📋 Chat Rooms <span>(${data.length} rooms)</span></h1>
-      <button onclick="logout()">Logout</button>
+      <div class="nav-actions">
+        <div id="live-indicator" class="live-indicator ${liveClass}" onclick="toggleAutoRefresh()" title="Toggle auto-refresh">
+          <span id="live-dot" class="live-dot"></span>
+          <span id="live-label" class="live-label">${liveLabel}</span>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
     </div>
     <div class="stats">
       <div class="stat-card"><div class="num">${data.length}</div><div class="label">Total Rooms</div></div>
@@ -161,6 +318,9 @@ function renderRooms(data) {
 function renderMessages(room, msgs) {
   const badge = room.isClosed ? 'badge-closed' : (room.type === 'public' ? 'badge-public' : 'badge-private');
   const label = room.isClosed ? 'Closed' : (room.type === 'public' ? 'Public' : 'Private');
+  const liveClass = autoRefresh ? 'on' : 'off';
+  const liveLabel = autoRefresh ? 'LIVE' : 'PAUSED';
+
   const msgsHtml = msgs.length === 0 ? '<div class="msg-empty">No messages in this room yet.</div>'
     : msgs.map(m => {
         let content = esc(m.content);
@@ -180,7 +340,15 @@ function renderMessages(room, msgs) {
       }).join('');
 
   return `
-    <button class="back-btn" onclick="render()">← Back to Rooms</button>
+    <div class="nav-bar">
+      <button class="back-btn" onclick="backToRooms()">← Back to Rooms</button>
+      <div class="nav-actions">
+        <div id="live-indicator" class="live-indicator ${liveClass}" onclick="toggleAutoRefresh()" title="Toggle auto-refresh">
+          <span id="live-dot" class="live-dot"></span>
+          <span id="live-label" class="live-label">${liveLabel}</span>
+        </div>
+      </div>
+    </div>
     <div class="room-info">
       <strong style="color:#fff;font-size:1.1rem">${esc(room.name)}</strong>
       <span class="badge ${badge}" style="margin-left:8px">${label}</span>
@@ -207,24 +375,32 @@ async function login() {
 }
 
 function logout() {
+  stopRefresh();
   adminKey = '';
   localStorage.removeItem('admin_key');
   render();
 }
 
+async function backToRooms() {
+  stopRefresh();
+  state = 'rooms';
+  currentRoomId = null;
+  await render();
+}
+
 async function viewRoom(roomId) {
+  stopRefresh();
   currentRoomId = roomId;
   state = 'messages';
-  render();
+  await render();
 }
 
 async function render() {
   const app = document.getElementById('app');
 
-  // Not logged in
   if (!adminKey) {
+    stopRefresh();
     app.innerHTML = renderLogin();
-    if (adminKey) render(); // if login succeeded
     return;
   }
 
@@ -233,19 +409,24 @@ async function render() {
 
   try {
     if (state === 'messages' && currentRoomId) {
-      const data = await fetchJson(`/rooms/${currentRoomId}/messages`);
+      const data = await fetchJson('/rooms/' + currentRoomId + '/messages');
       app.innerHTML = renderMessages(data.room, data.messages);
+      // Start auto-refresh for messages
+      startRefresh(refreshMessages);
     } else {
       state = 'rooms';
       const rooms = await fetchJson('/rooms');
       app.innerHTML = renderRooms(rooms);
+      // Start auto-refresh for rooms
+      startRefresh(refreshRooms);
     }
   } catch (err) {
+    stopRefresh();
     if (!adminKey) {
       app.innerHTML = renderLogin(err.message);
     } else {
-      app.innerHTML = `<div class="login-box"><div class="error">Error: ${esc(err.message)}</div>
-        <button onclick="render()" style="margin-top:16px;padding:8px 24px;border:none;border-radius:6px;background:#6c5ce7;color:#fff;cursor:pointer">Retry</button></div>`;
+      app.innerHTML = '<div class="login-box"><div class="error">Error: ' + esc(err.message) + '</div>' +
+        '<button onclick="render()" style="margin-top:16px;padding:8px 24px;border:none;border-radius:6px;background:#6c5ce7;color:#fff;cursor:pointer">Retry</button></div>';
     }
   }
 }
