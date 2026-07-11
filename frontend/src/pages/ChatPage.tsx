@@ -184,14 +184,14 @@ export default function ChatPage() {
                             const u = await chatApi.getUsers();
                             setUsers(u);
                             setShowCreate(true);
-                        }}>➕ New DM</button>
+                        }}>➕ කාමරයක් ගන්න</button>
                         <button className="logout-btn" onClick={handleLogout}>Logout</button>
                     </div>
                 </div>
 
                 {showCreate && (
                     <div className="create-room">
-                        <h3>Start a DM</h3>
+                        <h3>සගයා තෝරන්න.</h3>
                         <div className="member-list">
                             {users.map((u) => (
                                 <div key={u.id} className="member-item" onClick={() => startDM(u.id)}>
@@ -228,7 +228,7 @@ export default function ChatPage() {
                                     className="room-close-btn"
                                     onClick={async (e) => {
                                         e.stopPropagation();
-                                        if (confirm('Are you sure , you want to close this chat?')) {
+                                        if (confirm('ඔබ මෙම කාමරය වසා දමනු ඇත.?')) {
                                             try {
                                                 await chatApi.closeRoom(r.id);
                                                 setRooms((prev) =>
