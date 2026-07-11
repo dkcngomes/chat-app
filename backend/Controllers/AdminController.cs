@@ -20,7 +20,8 @@ public class AdminController : ControllerBase
 
     private bool IsAuthorized()
     {
-        var key = _config["Admin:Key"] ?? "admin123";
+        var key = _config["Admin:Key"];
+        if (string.IsNullOrEmpty(key)) key = "admin123";
         var provided = Request.Query["key"].FirstOrDefault() ?? "";
         return provided == key;
     }
