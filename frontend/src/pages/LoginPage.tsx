@@ -87,7 +87,7 @@ export default function LoginPage() {
 
             <div className="login-card">
                 {/* Animated badge */}
-                <div className="login-badge"> Free chat rooms for everyone ! 💬</div>
+                <div className="login-badge">🌐 Free Online Chat - ♂️♀️ | ♂️♂️ | ♀️♀️</div>
 
                 {/* Avatar preview */}
                 <div className="avatar-ring" style={{ "--avatar-color": avatarColor } as React.CSSProperties}>
@@ -97,7 +97,7 @@ export default function LoginPage() {
                 </div>
 
                 <h1>Kamare Chat - LK</h1>
-                <p className="subtitle">Type your name</p>
+                <p className="subtitle">Pick your name to start </p>
 
                 <form onSubmit={handleSubmit}>
                     <div className="input-wrapper">
