@@ -26,6 +26,12 @@
   .spinner { width: 32px; height: 32px; border: 3px solid #333; border-top-color: #6c5ce7; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Tabs */
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; background: #151528; border-radius: 10px; padding: 4px; }
+  .tab-btn { flex: 1; padding: 10px 20px; border: none; border-radius: 8px; background: transparent; color: #888; font-size: 0.9rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+  .tab-btn:hover { color: #ddd; background: #1e1e38; }
+  .tab-btn.active { background: #6c5ce7; color: #fff; font-weight: 600; }
+
   /* Stats */
   .stats { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
   .stat-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 16px 24px; flex: 1; min-width: 140px; }
@@ -74,10 +80,40 @@
   .live-indicator.off .live-dot { background: #f87171; }
   @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
   .live-indicator .live-label { font-size: 0.7rem; color: inherit; }
+
+  /* ── Gallery ── */
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .gallery-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; overflow: hidden; transition: border-color 0.2s, transform 0.2s; cursor: pointer; }
+  .gallery-card:hover { border-color: #6c5ce7; transform: translateY(-2px); }
+  .gallery-card .img-wrap { width: 100%; aspect-ratio: 4/3; overflow: hidden; background: #111; display: flex; align-items: center; justify-content: center; }
+  .gallery-card .img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+  .gallery-card:hover .img-wrap img { transform: scale(1.05); }
+  .gallery-card .meta { padding: 10px 12px; }
+  .gallery-card .meta .room { font-size: 0.8rem; color: #6c5ce7; font-weight: 600; margin-bottom: 2px; }
+  .gallery-card .meta .sender { font-size: 0.75rem; color: #888; }
+  .gallery-card .meta .time { font-size: 0.7rem; color: #555; }
+  .gallery-empty { text-align: center; padding: 60px 20px; color: #555; }
+  .gallery-empty .big-icon { font-size: 3rem; margin-bottom: 12px; }
+  .gallery-empty p { font-size: 0.95rem; }
+
+  /* Lightbox */
+  .lightbox { display: none; position: fixed; z-index: 999; inset: 0; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; padding: 40px; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .lightbox .close { position: absolute; top: 20px; right: 30px; font-size: 2rem; color: #fff; cursor: pointer; background: none; border: none; }
+  .lightbox .close:hover { color: #ff6b6b; }
+  .lightbox .caption { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 8px 20px; border-radius: 8px; color: #ddd; font-size: 0.85rem; text-align: center; max-width: 80%; }
 </style>
 </head>
 <body>
 <div class="container" id="app"></div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="close" onclick="closeLightbox()">&times;</button>
+  <img id="lightbox-img" src="" alt="" />
+  <div class="caption" id="lightbox-caption"></div>
+</div>
 
 <script>
 // ── Config ──
@@ -120,6 +156,34 @@ function esc(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function imgSrc(imageUrl) {
+  if (!imageUrl) return '';
+  if (imageUrl.startsWith('http')) return esc(imageUrl);
+  return API.replace('/api/admin', '') + esc(imageUrl);
+}
+
+// ── Lightbox ──
+function openLightbox(src, caption) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox-caption').textContent = caption || '';
+  document.getElementById('lightbox').classList.add('open');
+  document.addEventListener('keydown', lightboxKeyHandler);
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.removeEventListener('keydown', lightboxKeyHandler);
+}
+function lightboxKeyHandler(e) { if (e.key === 'Escape') closeLightbox(); }
+
+let _galleryData = [];
+function openGalleryImage(index) {
+  const img = _galleryData[index];
+  if (!img) return;
+  const src = imgSrc(img.imageUrl);
+  const caption = (img.caption || img.roomName) + ' — ' + img.sender + ' @ ' + fmtTime(img.timestamp);
+  openLightbox(src, caption);
+}
+
 // ── Refresh ──
 function stopRefresh() {
   if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
@@ -134,14 +198,20 @@ function startRefresh(fn) {
 function toggleAutoRefresh() {
   autoRefresh = !autoRefresh;
   if (autoRefresh) {
-    // Refresh immediately then start interval
     if (state === 'messages' && currentRoomId) refreshMessages();
+    else if (state === 'gallery') refreshGallery();
     else refreshRooms();
-    startRefresh(state === 'messages' ? refreshMessages : refreshRooms);
+    startRefresh(getRefreshFn());
   } else {
     stopRefresh();
   }
   updateLiveIndicator();
+}
+
+function getRefreshFn() {
+  if (state === 'messages' && currentRoomId) return refreshMessages;
+  if (state === 'gallery') return refreshGallery;
+  return refreshRooms;
 }
 
 function updateLiveIndicator() {
@@ -160,117 +230,97 @@ function updateLiveIndicator() {
   }
 }
 
-// ── Data refresh functions (no loading spinner — silent background update) ──
+// ── Data refresh functions ──
 
 async function refreshRooms() {
   try {
     const rooms = await fetchJson('/rooms');
-    if (state !== 'rooms') return; // stale
+    if (state !== 'rooms') return;
     const totalMsgs = rooms.reduce((s, r) => s + r.messageCount, 0);
     const openRooms = rooms.filter(r => !r.isClosed).length;
-
-    // Update stats
     const statsEls = document.querySelectorAll('.stat-card .num');
-    if (statsEls.length >= 3) {
-      statsEls[0].textContent = rooms.length;
-      statsEls[1].textContent = openRooms;
-      statsEls[2].textContent = totalMsgs;
-    }
-
-    // Update room cards — re-render the grid
+    if (statsEls.length >= 3) { statsEls[0].textContent = rooms.length; statsEls[1].textContent = openRooms; statsEls[2].textContent = totalMsgs; }
     const grid = document.querySelector('.room-grid');
     if (!grid) return;
     const prevScroll = window.scrollY;
     grid.innerHTML = rooms.map(r => {
       const badge = r.isClosed ? 'badge-closed' : (r.type === 'public' ? 'badge-public' : 'badge-private');
       const label = r.isClosed ? 'Closed' : (r.type === 'public' ? 'Public' : 'Private');
-      return `
-        <div class="room-card" onclick="viewRoom(${r.id})">
-          <div class="top">
-            <span class="name">${esc(r.name)}</span>
-            <span class="badge ${badge}">${label}</span>
-          </div>
-          <div class="meta">
-            <span>💬 ${r.messageCount} messages</span>
-            <span>👥 ${r.memberCount} members</span>
-            <span>📅 ${fmtTime(r.createdAt)}</span>
-            ${r.lastMessageAt ? `<span>🕐 last ${ago(r.lastMessageAt)}</span>` : ''}
-          </div>
-        </div>
-      `;
+      return '<div class="room-card" onclick="viewRoom(' + r.id + ')">' +
+        '<div class="top"><span class="name">' + esc(r.name) + '</span><span class="badge ' + badge + '">' + label + '</span></div>' +
+        '<div class="meta"><span>\uD83D\uDCAC ' + r.messageCount + ' messages</span><span>\uD83D\uDC65 ' + r.memberCount + ' members</span>' +
+        '<span>\uD83D\uDCC5 ' + fmtTime(r.createdAt) + '</span>' +
+        (r.lastMessageAt ? '<span>\uD83D\uDD50 last ' + ago(r.lastMessageAt) + '</span>' : '') + '</div></div>';
     }).join('');
     window.scrollTo(0, prevScroll);
-  } catch (e) {
-    // Silently ignore refresh errors to avoid flickering
-  }
+  } catch (e) { /* silent */ }
 }
 
 async function refreshMessages() {
   if (!currentRoomId) return;
   try {
     const data = await fetchJson('/rooms/' + currentRoomId + '/messages');
-    if (state !== 'messages' || currentRoomId !== data.room.id) return; // stale
-
+    if (state !== 'messages' || currentRoomId !== data.room.id) return;
     const room = data.room;
     const msgs = data.messages;
     const list = document.querySelector('.msg-list');
     if (!list) return;
-
-    // Update room info message count
     const infoEl = document.querySelector('.room-info .row');
-    if (infoEl) {
-      infoEl.innerHTML = `
-        <span>👥 ${room.members.join(', ')}</span>
-        <span>💬 ${msgs.length} messages</span>
-        <span>📅 Created ${fmtTime(room.createdAt)}</span>
-      `;
-    }
-
-    // Rebuild message list
+    if (infoEl) infoEl.innerHTML = '<span>\uD83D\uDC65 ' + room.members.join(', ') + '</span><span>\uD83D\uDCAC ' + msgs.length + ' messages</span><span>\uD83D\uDCC5 Created ' + fmtTime(room.createdAt) + '</span>';
     const wasAtBottom = window.scrollY + window.innerHeight >= document.body.scrollHeight - 60;
-    if (msgs.length === 0) {
-      list.innerHTML = '<div class="msg-empty">No messages in this room yet.</div>';
+    list.innerHTML = msgs.length === 0 ? '<div class="msg-empty">No messages in this room yet.</div>'
+      : msgs.map(m => {
+          let content = esc(m.content);
+          let img = '';
+          if (m.messageType === 'image' && m.imageUrl) {
+            img = '<img src="' + imgSrc(m.imageUrl) + '" alt="chat image" />';
+          }
+          return '<div class="msg"><div class="head"><span class="sender">' + esc(m.sender) + '</span><span class="time">' + fmtTime(m.timestamp) + '</span></div><div class="content">' + content + img + '</div></div>';
+        }).join('');
+    if (wasAtBottom) window.scrollTo(0, document.body.scrollHeight);
+  } catch (e) { /* silent */ }
+}
+
+async function refreshGallery() {
+  try {
+    const images = await fetchJson('/gallery');
+    if (state !== 'gallery') return;
+    _galleryData = images;
+    const grid = document.querySelector('.gallery-grid');
+    if (!grid) return;
+    const statsEls = document.querySelectorAll('.stat-card .num');
+    if (statsEls.length >= 1) { statsEls[0].textContent = images.length; }
+    const prevScroll = window.scrollY;
+    if (images.length === 0) {
+      grid.innerHTML = '<div class="gallery-empty"><div class="big-icon">\uD83D\uDCF7</div><p>No images uploaded yet. Share an image in a chat room and it will appear here.</p></div>';
     } else {
-      list.innerHTML = msgs.map(m => {
-        let content = esc(m.content);
-        let img = '';
-        if (m.messageType === 'image' && m.imageUrl) {
-          const src = m.imageUrl.startsWith('http')
-            ? esc(m.imageUrl)
-            : API.replace('/api/admin', '') + esc(m.imageUrl);
-          img = `<img src="${src}" alt="chat image" />`;
-        }
-        return `
-          <div class="msg">
-            <div class="head">
-              <span class="sender">${esc(m.sender)}</span>
-              <span class="time">${fmtTime(m.timestamp)}</span>
-            </div>
-            <div class="content">${content}${img}</div>
-          </div>
-        `;
+      grid.innerHTML = images.map((img, i) => {
+        const src = imgSrc(img.imageUrl);
+        return '<div class="gallery-card" onclick="openGalleryImage(' + i + ')">' +
+          '<div class="img-wrap"><img src="' + src + '" alt="' + esc(img.caption || '') + '" loading="lazy" /></div>' +
+          '<div class="meta"><div class="room">\uD83D\uDCCD ' + esc(img.roomName) + '</div><div class="sender">\uD83D\uDC64 ' + esc(img.sender) + '</div><div class="time">\uD83D\uDD52 ' + fmtTime(img.timestamp) + '</div></div></div>';
       }).join('');
     }
-    // Auto-scroll to bottom if user was already near the bottom
-    if (wasAtBottom) window.scrollTo(0, document.body.scrollHeight);
-  } catch (e) {
-    // Silently ignore refresh errors
-  }
+    window.scrollTo(0, prevScroll);
+  } catch (e) { /* silent */ }
 }
 
 // ── Renderers ──
 
 function renderLogin(err) {
-  return `
-    <div class="login-box">
-      <h1>🔐 Admin Dashboard</h1>
-      <p>Enter the admin key to view all chat conversations.</p>
-      <input type="password" id="key-input" placeholder="Admin key" autofocus
-        onkeydown="if(event.key==='Enter') login()" />
-      <button onclick="login()">Unlock Dashboard →</button>
-      ${err ? `<div class="error">${esc(err)}</div>` : ''}
-    </div>
-  `;
+  return '<div class="login-box">' +
+    '<h1>\uD83D\uDD12 Admin Dashboard</h1>' +
+    '<p>Enter the admin key to view all chat conversations.</p>' +
+    '<input type="password" id="key-input" placeholder="Admin key" autofocus onkeydown="if(event.key===\'Enter\') login()" />' +
+    '<button onclick="login()">Unlock Dashboard \u2192</button>' +
+    (err ? '<div class="error">' + esc(err) + '</div>' : '') + '</div>';
+}
+
+function renderTabs(activeTab) {
+  return '<div class="tab-bar">' +
+    '<button class="tab-btn' + (activeTab === 'rooms' ? ' active' : '') + '" onclick="switchTab(\'rooms\')">\uD83D\uDCCB Rooms</button>' +
+    '<button class="tab-btn' + (activeTab === 'gallery' ? ' active' : '') + '" onclick="switchTab(\'gallery\')">\uD83D\uDCF7 Gallery</button>' +
+    '</div>';
 }
 
 function renderRooms(data) {
@@ -279,44 +329,23 @@ function renderRooms(data) {
   const roomsHtml = data.map(r => {
     const badge = r.isClosed ? 'badge-closed' : (r.type === 'public' ? 'badge-public' : 'badge-private');
     const label = r.isClosed ? 'Closed' : (r.type === 'public' ? 'Public' : 'Private');
-    return `
-      <div class="room-card" onclick="viewRoom(${r.id})">
-        <div class="top">
-          <span class="name">${esc(r.name)}</span>
-          <span class="badge ${badge}">${label}</span>
-        </div>
-        <div class="meta">
-          <span>💬 ${r.messageCount} messages</span>
-          <span>👥 ${r.memberCount} members</span>
-          <span>📅 ${fmtTime(r.createdAt)}</span>
-          ${r.lastMessageAt ? `<span>🕐 last ${ago(r.lastMessageAt)}</span>` : ''}
-        </div>
-      </div>
-    `;
+    return '<div class="room-card" onclick="viewRoom(' + r.id + ')">' +
+      '<div class="top"><span class="name">' + esc(r.name) + '</span><span class="badge ' + badge + '">' + label + '</span></div>' +
+      '<div class="meta"><span>\uD83D\uDCAC ' + r.messageCount + ' messages</span><span>\uD83D\uDC65 ' + r.memberCount + ' members</span>' +
+      '<span>\uD83D\uDCC5 ' + fmtTime(r.createdAt) + '</span>' +
+      (r.lastMessageAt ? '<span>\uD83D\uDD50 last ' + ago(r.lastMessageAt) + '</span>' : '') + '</div></div>';
   }).join('');
-
-  // Build live indicator HTML
   const liveClass = autoRefresh ? 'on' : 'off';
   const liveLabel = autoRefresh ? 'LIVE' : 'PAUSED';
-
-  return `
-    <div class="nav-bar">
-      <h1>📋 Chat Rooms <span>(${data.length} rooms)</span></h1>
-      <div class="nav-actions">
-        <div id="live-indicator" class="live-indicator ${liveClass}" onclick="toggleAutoRefresh()" title="Toggle auto-refresh">
-          <span id="live-dot" class="live-dot"></span>
-          <span id="live-label" class="live-label">${liveLabel}</span>
-        </div>
-        <button class="logout-btn" onclick="logout()">Logout</button>
-      </div>
-    </div>
-    <div class="stats">
-      <div class="stat-card"><div class="num">${data.length}</div><div class="label">Total Rooms</div></div>
-      <div class="stat-card"><div class="num">${openRooms}</div><div class="label">Active Rooms</div></div>
-      <div class="stat-card"><div class="num">${totalMsgs}</div><div class="label">Total Messages</div></div>
-    </div>
-    <div class="room-grid">${roomsHtml}</div>
-  `;
+  return renderTabs('rooms') +
+    '<div class="nav-bar"><h1>\uD83D\uDCCB Chat Rooms <span>(' + data.length + ' rooms)</span></h1>' +
+    '<div class="nav-actions"><div id="live-indicator" class="live-indicator ' + liveClass + '" onclick="toggleAutoRefresh()" title="Toggle auto-refresh">' +
+    '<span id="live-dot" class="live-dot"></span><span id="live-label" class="live-label">' + liveLabel + '</span></div>' +
+    '<button class="logout-btn" onclick="logout()">Logout</button></div></div>' +
+    '<div class="stats"><div class="stat-card"><div class="num">' + data.length + '</div><div class="label">Total Rooms</div></div>' +
+    '<div class="stat-card"><div class="num">' + openRooms + '</div><div class="label">Active Rooms</div></div>' +
+    '<div class="stat-card"><div class="num">' + totalMsgs + '</div><div class="label">Total Messages</div></div></div>' +
+    '<div class="room-grid">' + roomsHtml + '</div>';
 }
 
 function renderMessages(room, msgs) {
@@ -324,53 +353,47 @@ function renderMessages(room, msgs) {
   const label = room.isClosed ? 'Closed' : (room.type === 'public' ? 'Public' : 'Private');
   const liveClass = autoRefresh ? 'on' : 'off';
   const liveLabel = autoRefresh ? 'LIVE' : 'PAUSED';
-
   const msgsHtml = msgs.length === 0 ? '<div class="msg-empty">No messages in this room yet.</div>'
     : msgs.map(m => {
         let content = esc(m.content);
         let img = '';
         if (m.messageType === 'image' && m.imageUrl) {
-          const src = m.imageUrl.startsWith('http')
-            ? esc(m.imageUrl)
-            : API.replace('/api/admin', '') + esc(m.imageUrl);
-          img = `<img src="${src}" alt="chat image" />`;
+          img = '<img src="' + imgSrc(m.imageUrl) + '" alt="chat image" />';
         }
-        return `
-          <div class="msg">
-            <div class="head">
-              <span class="sender">${esc(m.sender)}</span>
-              <span class="time">${fmtTime(m.timestamp)}</span>
-            </div>
-            <div class="content">${content}${img}</div>
-          </div>
-        `;
+        return '<div class="msg"><div class="head"><span class="sender">' + esc(m.sender) + '</span><span class="time">' + fmtTime(m.timestamp) + '</span></div><div class="content">' + content + img + '</div></div>';
+      }).join('');
+  return '<div class="nav-bar"><button class="back-btn" onclick="backToRooms()">\u2190 Back to Rooms</button>' +
+    '<div class="nav-actions"><div id="live-indicator" class="live-indicator ' + liveClass + '" onclick="toggleAutoRefresh()" title="Toggle auto-refresh">' +
+    '<span id="live-dot" class="live-dot"></span><span id="live-label" class="live-label">' + liveLabel + '</span></div></div></div>' +
+    '<div class="room-info"><strong style="color:#fff;font-size:1.1rem">' + esc(room.name) + '</strong>' +
+    '<span class="badge ' + badge + '" style="margin-left:8px">' + label + '</span>' +
+    '<div class="row"><span>\uD83D\uDC65 ' + room.members.join(', ') + '</span><span>\uD83D\uDCAC ' + msgs.length + ' messages</span><span>\uD83D\uDCC5 Created ' + fmtTime(room.createdAt) + '</span></div></div>' +
+    '<div class="msg-list">' + msgsHtml + '</div>';
+}
+
+function renderGallery(images) {
+  const liveClass = autoRefresh ? 'on' : 'off';
+  const liveLabel = autoRefresh ? 'LIVE' : 'PAUSED';
+  const gridHtml = images.length === 0
+    ? '<div class="gallery-empty"><div class="big-icon">\uD83D\uDCF7</div><p>No images uploaded yet. Share an image in a chat room and it will appear here.</p></div>'
+    : images.map((img, i) => {
+        const src = imgSrc(img.imageUrl);
+        return '<div class="gallery-card" onclick="openGalleryImage(' + i + ')">' +
+          '<div class="img-wrap"><img src="' + src + '" alt="' + esc(img.caption || '') + '" loading="lazy" /></div>' +
+          '<div class="meta"><div class="room">\uD83D\uDCCD ' + esc(img.roomName) + '</div><div class="sender">\uD83D\uDC64 ' + esc(img.sender) + '</div><div class="time">\uD83D\uDD52 ' + fmtTime(img.timestamp) + '</div></div></div>';
       }).join('');
 
-  return `
-    <div class="nav-bar">
-      <button class="back-btn" onclick="backToRooms()">← Back to Rooms</button>
-      <div class="nav-actions">
-        <div id="live-indicator" class="live-indicator ${liveClass}" onclick="toggleAutoRefresh()" title="Toggle auto-refresh">
-          <span id="live-dot" class="live-dot"></span>
-          <span id="live-label" class="live-label">${liveLabel}</span>
-        </div>
-      </div>
-    </div>
-    <div class="room-info">
-      <strong style="color:#fff;font-size:1.1rem">${esc(room.name)}</strong>
-      <span class="badge ${badge}" style="margin-left:8px">${label}</span>
-      <div class="row">
-        <span>👥 ${room.members.join(', ')}</span>
-        <span>💬 ${msgs.length} messages</span>
-        <span>📅 Created ${fmtTime(room.createdAt)}</span>
-      </div>
-    </div>
-    <div class="msg-list">${msgsHtml}</div>
-  `;
+  return renderTabs('gallery') +
+    '<div class="nav-bar"><h1>\uD83D\uDCF7 Image Gallery <span>(' + images.length + ' images)</span></h1>' +
+    '<div class="nav-actions"><div id="live-indicator" class="live-indicator ' + liveClass + '" onclick="toggleAutoRefresh()" title="Toggle auto-refresh">' +
+    '<span id="live-dot" class="live-dot"></span><span id="live-label" class="live-label">' + liveLabel + '</span></div>' +
+    '<button class="logout-btn" onclick="logout()">Logout</button></div></div>' +
+    '<div class="stats"><div class="stat-card"><div class="num">' + images.length + '</div><div class="label">Total Images</div></div></div>' +
+    '<div class="gallery-grid">' + gridHtml + '</div>';
 }
 
 // ── State ──
-let state = 'rooms'; // 'rooms' | 'messages'
+let state = 'rooms'; // 'rooms' | 'messages' | 'gallery'
 let currentRoomId = null;
 
 async function login() {
@@ -386,6 +409,15 @@ function logout() {
   adminKey = '';
   localStorage.removeItem('admin_key');
   render();
+}
+
+async function switchTab(tab) {
+  if (tab === 'gallery' && state === 'gallery') return;
+  if (tab === 'rooms' && state === 'rooms') return;
+  stopRefresh();
+  state = tab === 'gallery' ? 'gallery' : 'rooms';
+  currentRoomId = null;
+  await render();
 }
 
 async function backToRooms() {
@@ -404,37 +436,27 @@ async function viewRoom(roomId) {
 
 async function render() {
   const app = document.getElementById('app');
-
-  if (!adminKey) {
-    stopRefresh();
-    app.innerHTML = renderLogin();
-    return;
-  }
-
-  // Loading
+  if (!adminKey) { stopRefresh(); app.innerHTML = renderLogin(); return; }
   app.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
-
   try {
     if (state === 'messages' && currentRoomId) {
       const data = await fetchJson('/rooms/' + currentRoomId + '/messages');
       app.innerHTML = renderMessages(data.room, data.messages);
-      // Start auto-refresh for messages
       startRefresh(refreshMessages);
+    } else if (state === 'gallery') {
+      const images = await fetchJson('/gallery');
+      app.innerHTML = renderGallery(images);
+      startRefresh(refreshGallery);
     } else {
       state = 'rooms';
       const rooms = await fetchJson('/rooms');
       app.innerHTML = renderRooms(rooms);
-      // Start auto-refresh for rooms
       startRefresh(refreshRooms);
     }
   } catch (err) {
     stopRefresh();
-    if (!adminKey) {
-      app.innerHTML = renderLogin(err.message);
-    } else {
-      app.innerHTML = '<div class="login-box"><div class="error">Error: ' + esc(err.message) + '</div>' +
-        '<button onclick="render()" style="margin-top:16px;padding:8px 24px;border:none;border-radius:6px;background:#6c5ce7;color:#fff;cursor:pointer">Retry</button></div>';
-    }
+    if (!adminKey) { app.innerHTML = renderLogin(err.message); }
+    else { app.innerHTML = '<div class="login-box"><div class="error">Error: ' + esc(err.message) + '</div><button onclick="render()" style="margin-top:16px;padding:8px 24px;border:none;border-radius:6px;background:#6c5ce7;color:#fff;cursor:pointer">Retry</button></div>'; }
   }
 }
 

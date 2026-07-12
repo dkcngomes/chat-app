@@ -103,6 +103,35 @@ public class AdminController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// GET /api/admin/gallery?key=xxx — all images across every room
+    /// </summary>
+    [HttpGet("gallery")]
+    public async Task<ActionResult> GetGallery()
+    {
+        if (!IsAuthorized())
+            return Unauthorized(new { error = "Invalid or missing admin key. Pass ?key=yourkey" });
+
+        var images = await _db.Messages
+            .Include(m => m.Sender)
+            .Include(m => m.ChatRoom)
+            .Where(m => m.MessageType == "image" && m.ImagePath != null && m.ImagePath != "")
+            .OrderByDescending(m => m.Timestamp)
+            .Select(m => new
+            {
+                m.Id,
+                RoomId = m.ChatRoomId,
+                RoomName = m.ChatRoom.Name,
+                Sender = m.Sender!.Username,
+                Caption = m.Content,
+                ImageUrl = ResolveImageUrl(m.ImagePath),
+                m.Timestamp
+            })
+            .ToListAsync();
+
+        return Ok(images);
+    }
+
     private static string? ResolveImageUrl(string? imagePath)
     {
         if (string.IsNullOrEmpty(imagePath)) return null;
