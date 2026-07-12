@@ -209,7 +209,7 @@ export default function ChatPage() {
 
                 {showCreate && (
                     <div className="create-room">
-                        <h3>Partner</h3>
+                        <h3>Pick Partner</h3>
                         <div className="member-list">
                             {users.map((u) => (
                                 <div key={u.id} className="member-item" onClick={() => startDM(u.id)}>
