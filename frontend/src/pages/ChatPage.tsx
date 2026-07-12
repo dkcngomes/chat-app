@@ -91,14 +91,17 @@ export default function ChatPage() {
         });
     }, [activeRoom]);
 
-    // Listen for real-time online user count
+    // Listen for real-time online user count (mounted once to avoid race)
+    const activeRoomRef = useRef(activeRoom);
+    activeRoomRef.current = activeRoom;
     useEffect(() => {
         onRoomOnlineCount((data: { roomId: number; count: number }) => {
-            if (data.roomId === activeRoom?.id) {
+            if (data.roomId === activeRoomRef.current?.id) {
                 setOnlineCount(data.count);
             }
         });
-    }, [activeRoom]);
+        return () => { onRoomOnlineCount(() => {}); }; // noop on unmount
+    }, []);
 
     useEffect(() => {
         msgEndRef.current?.scrollIntoView({ behavior: "smooth" });
