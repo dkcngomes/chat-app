@@ -127,9 +127,9 @@ export default function LoginPage() {
                     <p className="disclaimer-title">📋 Disclaimer</p>
                     <p className="disclaimer-agree">By clicking "Start Chat" button , you agree to the following conditions:</p>
                     <ul>
-                        <li>Do not share personal, financial, or sensitive information with strangers.</li>
-                        <li>Be respectful; treat others the way you want to be treated..</li>
-                        <li>This website is not responsible for any misuse or careless actions by users..</li>
+                        <li>I will not share personal, financial, or sensitive information with strangers.</li>
+                        <li>I will be respectful; treat others the way I want to be treated..</li>
+                        <li>This website is not responsible for any misuse or careless actions by user.</li>
                         <li>Entertaintment purpose only, any other misuse stricly prohibited.</li>
                     </ul>
                 </div>
