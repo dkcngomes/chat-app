@@ -9,8 +9,8 @@ const RESERVED = new Set(["admin", "administrator", "system", "moderator", "supp
 function isReserved(name: string): string | null {
     const lower = name.toLowerCase();
     if (RESERVED.has(lower)) return `"${name}" is a reserved username. Please choose another.`;
-    // Also block any name ending with "admin" to catch variations like "Admin123"
-    if (lower.endsWith("admin")) return `Usernames containing "admin" are not allowed.`;
+    // Block any username containing "admin" to catch any variation
+    if (lower.includes("admin")) return `Usernames containing "admin" are not allowed.`;
     return null;
 }
 

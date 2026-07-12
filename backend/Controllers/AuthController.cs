@@ -35,7 +35,7 @@ public class AuthController : ControllerBase
         if (ReservedNames.Contains(req.Username))
             return BadRequest($"\"{req.Username}\" is a reserved username. Please choose another.");
 
-        if (req.Username.EndsWith("admin", StringComparison.OrdinalIgnoreCase))
+        if (req.Username.Contains("admin", StringComparison.OrdinalIgnoreCase))
             return BadRequest($"Usernames containing \"admin\" are not allowed.");
 
         // Check if someone with this name is currently active
