@@ -69,7 +69,7 @@ export default function LoginPage() {
 
             <div className="login-card">
                 {/* Animated badge */}
-                <div className="login-badge">💬 Live Chat</div>
+                <div className="login-badge"> Chat rooms are Live 💬</div>
 
                 {/* Avatar preview */}
                 <div className="avatar-ring" style={{ "--avatar-color": avatarColor } as React.CSSProperties}>
@@ -78,8 +78,8 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <h1>Welcome to  [Kamare] Chat !</h1>
-                <p className="subtitle">Pick a username and make new friends</p>
+                <h1>Kamare Chat</h1>
+                <p className="subtitle">Pick a username</p>
 
                 <form onSubmit={handleSubmit}>
                     <div className="input-wrapper">
@@ -96,7 +96,7 @@ export default function LoginPage() {
                     </div>
                     {error && <p className="error">{error}</p>}
                     <button type="submit" className="join-btn">
-                        <span>Enter Chat</span>
+                        <span>Start Chat</span>
                         <span className="btn-arrow">→</span>
                     </button>
                 </form>
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
                 <div className="disclaimer">
                     <p className="disclaimer-title">📋 Disclaimer</p>
-                    <p className="disclaimer-agree">By clicking "Enter Chat" button , you agree to the following conditions:</p>
+                    <p className="disclaimer-agree">By clicking "Start Chat" button , you agree to the following conditions:</p>
                     <ul>
                         <li>Do not share personal, financial, or sensitive information.</li>
                         <li>Be respectful; treat others the way you want to be treated..</li>
