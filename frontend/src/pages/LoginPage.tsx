@@ -87,7 +87,7 @@ export default function LoginPage() {
 
             <div className="login-card">
                 {/* Animated badge */}
-                <div className="login-badge">🌐 Free Online Chat - ♂️ ♀️ 🌈</div>
+                <div className="login-badge">🌐 Free Online Chat ♂️ ♀️ 🌈</div>
 
                 {/* Avatar preview */}
                 <div className="avatar-ring" style={{ "--avatar-color": avatarColor } as React.CSSProperties}>
