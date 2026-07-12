@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "../services/api";
 
-const emojis = ["💬", "✨", "🚀", "🎉", "💫", "🌈", "⭐", "🦋", "🌸", "🔥"];
+const emojis = ["💬", "💫", "🌈", "⭐", "🦋", "🌸", "🔥"];
 
 export default function LoginPage() {
     const [username, setUsername] = useState("");
