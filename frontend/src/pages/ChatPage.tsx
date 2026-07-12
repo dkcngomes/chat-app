@@ -307,7 +307,7 @@ export default function ChatPage() {
                                             {m.content && <p>{m.content}</p>}
                                             {m.imageUrl && (
                                                 <img
-                                                    src={`${API_ORIGIN}${m.imageUrl}`}
+                                                    src={m.imageUrl.startsWith("http") ? m.imageUrl : `${API_ORIGIN}${m.imageUrl}`}
                                                     alt="shared"
                                                     style={{ maxWidth: 300, borderRadius: 8 }}
                                                 />

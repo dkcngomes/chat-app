@@ -235,7 +235,10 @@ async function refreshMessages() {
         let content = esc(m.content);
         let img = '';
         if (m.messageType === 'image' && m.imageUrl) {
-          img = `<img src="${API.replace('/api/admin', '')}${esc(m.imageUrl)}" alt="chat image" />`;
+          const src = m.imageUrl.startsWith('http')
+            ? esc(m.imageUrl)
+            : API.replace('/api/admin', '') + esc(m.imageUrl);
+          img = `<img src="${src}" alt="chat image" />`;
         }
         return `
           <div class="msg">
@@ -327,7 +330,10 @@ function renderMessages(room, msgs) {
         let content = esc(m.content);
         let img = '';
         if (m.messageType === 'image' && m.imageUrl) {
-          img = `<img src="${API.replace('/api/admin', '')}${esc(m.imageUrl)}" alt="chat image" />`;
+          const src = m.imageUrl.startsWith('http')
+            ? esc(m.imageUrl)
+            : API.replace('/api/admin', '') + esc(m.imageUrl);
+          img = `<img src="${src}" alt="chat image" />`;
         }
         return `
           <div class="msg">

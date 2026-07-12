@@ -90,15 +90,13 @@ public class ChatHub : Hub
         if (room.Type == "private" && !room.Members.Any(m => m.UserId == UserId))
             return;
 
-        var fileName = imageUrl.Replace("/uploads/", "");
-
         var msg = new Message
         {
             ChatRoomId = roomId,
             SenderId = UserId,
             Content = caption ?? "",
             MessageType = "image",
-            ImagePath = fileName,
+            ImagePath = imageUrl,
             Timestamp = DateTime.UtcNow
         };
 

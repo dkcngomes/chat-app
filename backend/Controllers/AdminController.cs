@@ -97,9 +97,16 @@ public class AdminController : ControllerBase
                 Sender = m.Sender?.Username ?? "?",
                 m.MessageType,
                 m.Content,
-                ImageUrl = string.IsNullOrEmpty(m.ImagePath) ? null : $"/uploads/{m.ImagePath}",
+                ImageUrl = ResolveImageUrl(m.ImagePath),
                 m.Timestamp
             })
         });
+    }
+
+    private static string? ResolveImageUrl(string? imagePath)
+    {
+        if (string.IsNullOrEmpty(imagePath)) return null;
+        if (imagePath.StartsWith("http") || imagePath.StartsWith("/")) return imagePath;
+        return $"/uploads/{imagePath}";
     }
 }

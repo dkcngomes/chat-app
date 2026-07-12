@@ -17,18 +17,28 @@ namespace backend.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly IWebHostEnvironment _env;
     private readonly IHubContext<ChatHub> _hubContext;
+    private readonly IFileStorageService _fileStorage;
 
-    public ChatController(AppDbContext db, IWebHostEnvironment env, IHubContext<ChatHub> hubContext)
+    public ChatController(AppDbContext db, IHubContext<ChatHub> hubContext, IFileStorageService fileStorage)
     {
         _db = db;
-        _env = env;
         _hubContext = hubContext;
+        _fileStorage = fileStorage;
     }
 
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     private string UserName => User.FindFirstValue(ClaimTypes.Name)!;
+
+    /// <summary>Resolve stored ImagePath to a public URL (handles R2 absolute URLs vs local paths).</summary>
+    private static string? ResolveImageUrl(string? imagePath)
+    {
+        if (string.IsNullOrEmpty(imagePath)) return null;
+        // Already an absolute URL (R2) or starts with / (local URL)
+        if (imagePath.StartsWith("http") || imagePath.StartsWith("/")) return imagePath;
+        // Plain filename — legacy local storage
+        return $"/uploads/{imagePath}";
+    }
 
     [HttpGet("rooms")]
     public async Task<ActionResult<List<ChatRoomDto>>> GetRooms()
@@ -186,7 +196,7 @@ public class ChatController : ControllerBase
         return messages.Select(m => new MessageDto(
             m.Id, m.ChatRoomId, m.SenderId, m.Sender.Username,
             m.MessageType, m.Content,
-            string.IsNullOrEmpty(m.ImagePath) ? null : $"/uploads/{m.ImagePath}",
+            ResolveImageUrl(m.ImagePath),
             m.Timestamp
         )).ToList();
     }
@@ -197,16 +207,10 @@ public class ChatController : ControllerBase
         if (file == null || file.Length == 0)
             return BadRequest("No file provided.");
 
-        var uploadsDir = Path.Combine(_env.ContentRootPath, "wwwroot", "uploads");
-        Directory.CreateDirectory(uploadsDir);
+        await using var stream = file.OpenReadStream();
+        var (fileName, url) = await _fileStorage.UploadAsync(stream, file.FileName);
 
-        var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-        var filePath = Path.Combine(uploadsDir, fileName);
-
-        using var stream = new FileStream(filePath, FileMode.Create);
-        await file.CopyToAsync(stream);
-
-        return Ok(new { fileName, url = $"/uploads/{fileName}" });
+        return Ok(new { fileName, url });
     }
 
     [HttpPost("sessions/start")]
@@ -292,9 +296,11 @@ public class ChatController : ControllerBase
                     .ToListAsync();
 
                 var html = BuildRoomTranscriptHtml(fullRoom, messages);
-                var attachments = messages
-                    .Where(m => m.MessageType == "image" && !string.IsNullOrEmpty(m.ImagePath))
-                    .Select(m => Path.Combine(env.ContentRootPath, "wwwroot", "uploads", m.ImagePath))
+                var localAttachments = messages
+                    .Where(m => m.MessageType == "image" && !string.IsNullOrEmpty(m.ImagePath)
+                        && !m.ImagePath.StartsWith("http"))
+                    .Select(m => Path.Combine(env.ContentRootPath, "wwwroot", "uploads",
+                        Path.GetFileName(m.ImagePath)))
                     .Where(p => System.IO.File.Exists(p))
                     .ToList();
 
@@ -313,7 +319,7 @@ public class ChatController : ControllerBase
                     toEmail,
                     $"[Chat Closed] Room #{roomId} - {fullRoom.Name} - {fullRoom.ClosedAt:yyyy-MM-dd HH:mm} UTC",
                     html,
-                    attachments
+                    localAttachments
                 );
             }
             catch (Exception ex)
@@ -363,12 +369,28 @@ public class ChatController : ControllerBase
         foreach (var m in messages)
         {
             var content = m.MessageType == "image"
-                ? $"{System.Net.WebUtility.HtmlEncode(m.Content)} <br/><em>[Image: {m.ImagePath}]</em>"
+                ? BuildImageCell(m)
                 : System.Net.WebUtility.HtmlEncode(m.Content);
             sb.Append($"<tr><td>{m.Timestamp:HH:mm:ss}</td><td>{System.Net.WebUtility.HtmlEncode(m.Sender?.Username ?? "?")}</td><td>{m.MessageType}</td><td>{content}</td></tr>");
         }
 
         sb.Append("</table></body></html>");
         return sb.ToString();
+    }
+
+    private static string BuildImageCell(Message m)
+    {
+        var caption = System.Net.WebUtility.HtmlEncode(m.Content);
+        var imageUrl = ResolveImageUrl(m.ImagePath);
+        if (imageUrl == null) return caption;
+
+        if (imageUrl.StartsWith("http"))
+        {
+            // R2 / cloud URL — embed as a clickable link
+            return $"{caption} <br/><a href='{imageUrl}' target='_blank'>📷 View Image</a>";
+        }
+
+        // Local file — embed as inline image (works in email if path is accessible)
+        return $"{caption} <br/><em>[Image: {m.ImagePath}]</em>";
     }
 }

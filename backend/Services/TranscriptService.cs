@@ -53,9 +53,11 @@ public class TranscriptService
         if (messages.Count == 0) return;
 
         var html = BuildTranscriptHtml(session, messages);
-        var attachments = messages
-            .Where(m => m.MessageType == "image" && !string.IsNullOrEmpty(m.ImagePath))
-            .Select(m => Path.Combine(_env.ContentRootPath, "wwwroot", "uploads", m.ImagePath))
+        var localAttachments = messages
+            .Where(m => m.MessageType == "image" && !string.IsNullOrEmpty(m.ImagePath)
+                && !m.ImagePath.StartsWith("http"))
+            .Select(m => Path.Combine(_env.ContentRootPath, "wwwroot", "uploads",
+                Path.GetFileName(m.ImagePath)))
             .Where(p => File.Exists(p))
             .ToList();
 
@@ -65,7 +67,7 @@ public class TranscriptService
             toEmail,
             $"[Security Transcript] {session.User.Username} - {session.StartedAt:yyyy-MM-dd HH:mm} UTC",
             html,
-            attachments
+            localAttachments
         );
     }
 
@@ -94,12 +96,25 @@ public class TranscriptService
         foreach (var m in messages)
         {
             var content = m.MessageType == "image"
-                ? $"{System.Net.WebUtility.HtmlEncode(m.Content)} <br/><em>[Image: {m.ImagePath}]</em>"
+                ? BuildImageCell(m)
                 : System.Net.WebUtility.HtmlEncode(m.Content);
             sb.Append($"<tr><td>{m.Timestamp:HH:mm:ss}</td><td>{System.Net.WebUtility.HtmlEncode(m.ChatRoom.Name)}</td><td>{m.MessageType}</td><td>{content}</td></tr>");
         }
 
         sb.Append("</table>");
         return sb.ToString();
+    }
+
+    private static string BuildImageCell(Message m)
+    {
+        var caption = System.Net.WebUtility.HtmlEncode(m.Content);
+        var imagePath = m.ImagePath ?? "";
+        if (imagePath.StartsWith("http"))
+        {
+            // R2 / cloud URL — clickable link
+            return $"{caption} <br/><a href='{imagePath}' target='_blank'>📷 View Image</a>";
+        }
+        // Local file — show filename
+        return $"{caption} <br/><em>[Image: {imagePath}]</em>";
     }
 }

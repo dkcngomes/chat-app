@@ -50,6 +50,19 @@ builder.Services.AddSingleton<JwtService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<TranscriptService>();
 
+// ── File Storage (R2 or local) ──
+var storageProvider = builder.Configuration["CloudStorage:Provider"]?.ToLowerInvariant();
+if (storageProvider == "r2")
+{
+    builder.Services.AddSingleton<IFileStorageService, R2StorageService>();
+    Console.WriteLine("Using Cloudflare R2 for file storage.");
+}
+else
+{
+    builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+    Console.WriteLine("Using local disk for file storage.");
+}
+
 // ── SignalR + Controllers ──
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
