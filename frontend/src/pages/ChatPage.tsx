@@ -19,6 +19,14 @@ export default function ChatPage() {
     const sessionEnded = useRef(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [onlineCount, setOnlineCount] = useState(0);
+    /** Tracks closed DM rooms that received new messages while not actively viewing */
+    const [unreadRooms, setUnreadRooms] = useState<Set<number>>(new Set());
+
+    // Refs so mount-once SignalR handlers always see current values
+    const roomsRef = useRef(rooms);
+    roomsRef.current = rooms;
+    const activeRoomRef = useRef(activeRoom);
+    activeRoomRef.current = activeRoom;
 
     useEffect(() => {
         if (!localStorage.getItem("token")) {
@@ -57,13 +65,21 @@ export default function ChatPage() {
         };
     }, []);
 
+    // Listen for incoming messages (mount-once — uses refs to avoid stale closures)
     useEffect(() => {
         onMessageReceived((msg: Message) => {
-            if (msg.chatRoomId === activeRoom?.id) {
+            if (msg.chatRoomId === activeRoomRef.current?.id) {
                 setMessages((prev) => [...prev, msg]);
+            } else {
+                // Message arrived for a different room — if it's closed, show blinking dot
+                const room = roomsRef.current.find(r => r.id === msg.chatRoomId);
+                if (room?.isClosed) {
+                    setUnreadRooms(prev => { const s = new Set(prev); s.add(msg.chatRoomId); return s; });
+                }
             }
         });
-    }, [activeRoom]);
+        return () => { onMessageReceived(() => {}); };
+    }, []);
 
     // Listen for new rooms created by other users (DM / group)
     useEffect(() => {
@@ -92,8 +108,6 @@ export default function ChatPage() {
     }, [activeRoom]);
 
     // Listen for real-time online user count (mounted once to avoid race)
-    const activeRoomRef = useRef(activeRoom);
-    activeRoomRef.current = activeRoom;
     useEffect(() => {
         onRoomOnlineCount((data: { roomId: number; count: number }) => {
             if (data.roomId === activeRoomRef.current?.id) {
@@ -119,6 +133,7 @@ export default function ChatPage() {
         closeMenu();
         if (activeRoom) await leaveRoom(activeRoom.id);
         setActiveRoom(room);
+        setUnreadRooms((prev) => { const s = new Set(prev); s.delete(room.id); return s; });
         const msgs = await chatApi.getMessages(room.id);
         setMessages(msgs);
         await joinRoom(room.id);
@@ -211,13 +226,14 @@ export default function ChatPage() {
                         <div
                             key={r.id}
                             className={`room-item ${activeRoom?.id === r.id ? "active" : ""} ${r.isClosed ? "closed" : ""}`}
-                            onClick={() => {
-                                if (!r.isClosed) selectRoom(r);
-                            }}
+                            onClick={() => selectRoom(r)}
                         >
                             <span className="room-icon">{r.isClosed ? "🔴" : r.type === "public" ? "🏠" : "🔒"}</span>
                             <div>
-                                <strong>{r.name}</strong>
+                                <strong>
+                                    {r.name}
+                                    {unreadRooms.has(r.id) && <span className="unread-dot" />}
+                                </strong>
                                 <small>
                                     {r.isClosed
                                         ? "Closed"
