@@ -96,8 +96,8 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <h1>Kamare Chat</h1>
-                <p className="subtitle">Pick a username</p>
+                <h1>Kamare Chat - LK</h1>
+                <p className="subtitle">Type your name</p>
 
                 <form onSubmit={handleSubmit}>
                     <div className="input-wrapper">
@@ -120,16 +120,17 @@ export default function LoginPage() {
                 </form>
 
                 <p className="hint">
-                    🔒Don't share sensitive information.
+                    🔒Don't share sensitive information with strangers.
                 </p>
 
                 <div className="disclaimer">
                     <p className="disclaimer-title">📋 Disclaimer</p>
                     <p className="disclaimer-agree">By clicking "Start Chat" button , you agree to the following conditions:</p>
                     <ul>
-                        <li>Do not share personal, financial, or sensitive information.</li>
+                        <li>Do not share personal, financial, or sensitive information with strangers.</li>
                         <li>Be respectful; treat others the way you want to be treated..</li>
                         <li>This website is not responsible for any misuse or careless actions by users..</li>
+                        <li>Entertaintment purpose only, any other misuse stricly prohibited.</li>
                     </ul>
                 </div>
             </div>
