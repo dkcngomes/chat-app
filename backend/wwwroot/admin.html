@@ -227,7 +227,7 @@ async function refreshMessages() {
     }
 
     // Rebuild message list
-    const prevScroll = window.scrollY;
+    const wasAtBottom = window.scrollY + window.innerHeight >= document.body.scrollHeight - 60;
     if (msgs.length === 0) {
       list.innerHTML = '<div class="msg-empty">No messages in this room yet.</div>';
     } else {
@@ -248,7 +248,8 @@ async function refreshMessages() {
         `;
       }).join('');
     }
-    window.scrollTo(0, prevScroll);
+    // Auto-scroll to bottom if user was already near the bottom
+    if (wasAtBottom) window.scrollTo(0, document.body.scrollHeight);
   } catch (e) {
     // Silently ignore refresh errors
   }

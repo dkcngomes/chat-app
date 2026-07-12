@@ -78,8 +78,8 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <h1>කාමරේ චැට්</h1>
-                <p className="subtitle">ඔබ කැමති නමක් තෝරා ගන්න.</p>
+                <h1>Welcome to  [Kamare] Chat !</h1>
+                <p className="subtitle">Pick a username and make new friends</p>
 
                 <form onSubmit={handleSubmit}>
                     <div className="input-wrapper">
@@ -102,16 +102,16 @@ export default function LoginPage() {
                 </form>
 
                 <p className="hint">
-                    🔒සැමවිටම නිර්නාමිකව සිටින්න, විනෝද වන්න!
+                    🔒Don't share sensitive information.
                 </p>
 
                 <div className="disclaimer">
                     <p className="disclaimer-title">📋 Disclaimer</p>
-                    <p className="disclaimer-agree">By clicking "Enter Chat" you agree to the following conditions:</p>
+                    <p className="disclaimer-agree">By clicking "Enter Chat" button , you agree to the following conditions:</p>
                     <ul>
-                        <li>පුද්ගලික, මූල්‍යමය හෝ සංවේදී තොරතුරු බෙදා නොගන්න</li>
-                        <li>ගෞරවනීය වන්න , ඔබට සැලකීමට කැමති ආකාරයට අන් අයට සලකන්න.</li>
-                        <li>පරිශීලකයින් විසින් කරන ලද කිසිදු අනිසි භාවිතයක් හෝ නොසැලකිලිමත් ක්‍රියාවක් සඳහා මෙම වෙබ් අඩවිය වගකිව යුතු නොවේ.</li>
+                        <li>Do not share personal, financial, or sensitive information.</li>
+                        <li>Be respectful; treat others the way you want to be treated..</li>
+                        <li>This website is not responsible for any misuse or careless actions by users..</li>
                     </ul>
                 </div>
             </div>
