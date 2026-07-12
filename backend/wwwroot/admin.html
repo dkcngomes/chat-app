@@ -138,35 +138,30 @@ function ago(ts) {
   const ms = Date.now() - new Date(ts).getTime();
   const secs = Math.floor(ms / 1000);
   const mins = Math.floor(secs / 60);
-  if (secs < 10) return 'just now';
-  if (secs < 60) return secs + 's ago';
-  if (mins < 60) return mins + 'm ago';
+  if (secs < 10) return 'දැන්';
+  if (secs < 60) return 'තත්පර ' + secs + ' කට පෙර';
+  if (mins < 60) return 'මිනිත්තු ' + mins + ' කට පෙර';
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return hrs + 'h ago';
+  if (hrs < 24) return 'පැය ' + hrs + ' කට පෙර';
   const days = Math.floor(hrs / 24);
-  if (days < 30) return days + 'd ago';
+  if (days < 30) return 'දින ' + days + ' කට පෙර';
   const months = Math.floor(days / 30);
-  return months + 'mo ago';
+  return 'මාස ' + months + ' කට පෙර';
 }
 
 function fmtTime(ts) {
   if (!ts) return '';
   const d = new Date(ts);
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const short = new Intl.DateTimeFormat(undefined, {
+  const opts = {
     month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
     timeZoneName: 'shortOffset',
-  }).format(d);
+  };
   // If not from this year, include year
   if (d.getFullYear() !== new Date().getFullYear()) {
-    return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-      timeZoneName: 'shortOffset',
-    }).format(d);
+    opts.year = 'numeric';
   }
-  return short;
+  return new Intl.DateTimeFormat('si-LK', opts).format(d);
 }
 
 function esc(str) {
