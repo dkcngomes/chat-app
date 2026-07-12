@@ -219,7 +219,7 @@ export default function ChatPage() {
                                     {r.isClosed
                                         ? "Closed"
                                         : r.type === "public"
-                                            ? "මැද සාලේ/Living Room"
+                                            ? "Living Room (Public Area)"
                                             : `${r.members.length} members`}
                                 </small>
                             </div>
