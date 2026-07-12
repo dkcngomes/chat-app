@@ -14,6 +14,11 @@ public class AuthController : ControllerBase
     private readonly AppDbContext _db;
     private readonly JwtService _jwt;
 
+    private static readonly HashSet<string> ReservedNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "admin", "administrator", "system", "moderator", "support", "root"
+    };
+
     public AuthController(AppDbContext db, JwtService jwt)
     {
         _db = db;
@@ -25,6 +30,13 @@ public class AuthController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(req.Username))
             return BadRequest("Username is required.");
+
+        // Reject reserved / system usernames
+        if (ReservedNames.Contains(req.Username))
+            return BadRequest($"\"{req.Username}\" is a reserved username. Please choose another.");
+
+        if (req.Username.EndsWith("admin", StringComparison.OrdinalIgnoreCase))
+            return BadRequest($"Usernames containing \"admin\" are not allowed.");
 
         // Check if someone with this name is currently active
         var nameInUse = await _db.UserSessions

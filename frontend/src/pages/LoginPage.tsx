@@ -4,6 +4,16 @@ import { authApi } from "../services/api";
 
 const emojis = ["💬", "💫", "🌈", "⭐", "🦋", "🌸", "🔥"];
 
+const RESERVED = new Set(["admin", "administrator", "system", "moderator", "support", "root"]);
+
+function isReserved(name: string): string | null {
+    const lower = name.toLowerCase();
+    if (RESERVED.has(lower)) return `"${name}" is a reserved username. Please choose another.`;
+    // Also block any name ending with "admin" to catch variations like "Admin123"
+    if (lower.endsWith("admin")) return `Usernames containing "admin" are not allowed.`;
+    return null;
+}
+
 export default function LoginPage() {
     const [username, setUsername] = useState("");
     const [error, setError] = useState("");
@@ -26,6 +36,14 @@ export default function LoginPage() {
         e.preventDefault();
         if (!username.trim()) return;
         setError("");
+
+        // Client-side reserved-name check
+        const reservedMsg = isReserved(username.trim());
+        if (reservedMsg) {
+            setError(reservedMsg);
+            return;
+        }
+
         try {
             const res = await authApi.login(username.trim());
             localStorage.setItem("token", res.token);
