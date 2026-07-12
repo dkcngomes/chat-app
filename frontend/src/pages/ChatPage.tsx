@@ -323,7 +323,7 @@ export default function ChatPage() {
                         </div>
 
                         <form className="input-area" onSubmit={handleSend}>
-                            {activeRoom.type === "private" && (
+                            {!activeRoom.isClosed && (
                                 <>
                                     <input
                                         type="file"
