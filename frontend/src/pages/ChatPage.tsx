@@ -180,7 +180,9 @@ export default function ChatPage() {
     }
 
     const formatTime = (ts: string) => {
-        const d = new Date(ts);
+        // Treat as UTC if no timezone indicator (back-end sends Z now, but be defensive)
+        const normalized = ts.includes('Z') || ts.includes('+') || ts.includes('-') ? ts : ts + 'Z';
+        const d = new Date(normalized);
         return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     };
 

@@ -1,4 +1,6 @@
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using backend.Data;
 using backend.Hubs;
 using backend.Services;
@@ -61,6 +63,12 @@ else
     builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
     Console.WriteLine("Using local disk for file storage.");
 }
+
+// ── JSON: always serialize DateTime as UTC (preserve Z suffix) ──
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(opt =>
+{
+    opt.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+});
 
 // ── SignalR + Controllers ──
 builder.Services.AddSignalR();

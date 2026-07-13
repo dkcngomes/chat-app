@@ -151,7 +151,9 @@ function ago(ts) {
 
 function fmtTime(ts) {
   if (!ts) return '';
-  const d = new Date(ts);
+  // Normalize as UTC if no timezone indicator
+  const normalized = (ts.includes('Z') || ts.includes('+') || ts.includes('-')) ? ts : ts + 'Z';
+  const d = new Date(normalized);
   const opts = {
     month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
