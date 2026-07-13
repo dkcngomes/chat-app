@@ -7,9 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
-var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrWhiteSpace(jwtKey))
-    jwtKey = "SuperSecretKeyForDev12345678901234567890";
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is not configured. Set the Jwt__Key environment variable.");
 
 // ── Database ──
 builder.Services.AddDbContext<AppDbContext>(opt =>

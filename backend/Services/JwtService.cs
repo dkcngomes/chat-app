@@ -16,9 +16,8 @@ public class JwtService
 
     public string GenerateToken(int userId, string username)
     {
-        var jwtKey = _config["Jwt:Key"];
-        if (string.IsNullOrWhiteSpace(jwtKey))
-            jwtKey = "SuperSecretKeyForDev12345678901234567890";
+        var jwtKey = _config["Jwt:Key"]
+            ?? throw new InvalidOperationException("Jwt:Key is not configured. Set the Jwt__Key environment variable.");
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
