@@ -312,8 +312,14 @@ export default function LoginPage() {
                             <h4>Disclaimer</h4>
                             <p className="footer-disclaimer">
                                 By using Kamare Chat, you agree not to share personal, financial, or sensitive 
-                                information. Be respectful to others. This platform is for entertainment 
+                                information. Be respectful to others. 
+                                
+                                Please note that site traffic will be used for analytical purposes.
+
+                                This platform is for entertainment 
                                 purposes only. We are not responsible for misuse by users.
+                               
+                                
                             </p>
                         </div>
                     </div>
