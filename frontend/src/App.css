@@ -12,7 +12,7 @@ body {
 }
 
 #root {
-    height: 100vh;
+    min-height: 100vh;
 }
 
 /* ── Login Page ── */
@@ -1266,5 +1266,496 @@ body {
     .sidebar-actions button,
     .input-area .attach-btn {
         min-height: 44px;
+    }
+}
+
+/* ═══════════════════════════════════════
+   LANDING PAGE — Full SEO-Friendly Layout
+   ═══════════════════════════════════════ */
+
+html {
+    scroll-behavior: smooth;
+}
+
+.landing-page {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0f0c29 0%, #302b63 40%, #24243e 100%);
+    overflow-x: hidden;
+}
+
+/* ── Section Container ── */
+.section-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.section-title {
+    font-size: 36px;
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.section-subtitle {
+    font-size: 17px;
+    color: #8892b0;
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+/* ── Hero Section ── */
+.hero-section {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px 60px;
+    overflow: hidden;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: 700px;
+    width: 100%;
+}
+
+.hero-badge {
+    display: inline-block;
+    padding: 6px 18px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #4f8cff, #7c5bfe);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+.hero-title {
+    font-size: 48px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+}
+
+.hero-title .highlight {
+    background: linear-gradient(135deg, #4f8cff, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 18px;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 36px;
+    max-width: 580px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Hero login card — same design as old login-card */
+.hero-card {
+    background: rgba(30, 39, 69, 0.85);
+    backdrop-filter: blur(20px);
+    padding: 36px 32px;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hero-card h2 {
+    font-size: 22px;
+    margin-bottom: 4px;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.hero-card-subtitle {
+    color: #8892b0;
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.hero-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hero-card .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.hero-card .input-wrapper .input-icon {
+    position: absolute;
+    left: 14px;
+    font-size: 16px;
+    color: #5a6a8a;
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.hero-card input {
+    width: 100%;
+    padding: 14px 16px 14px 36px;
+    border: 2px solid #2d3a5c;
+    border-radius: 12px;
+    background: rgba(20, 27, 51, 0.6);
+    color: #fff;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.3s ease;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.hero-card input:focus {
+    border-color: #4f8cff;
+    box-shadow: 0 0 0 4px rgba(79, 140, 255, 0.15);
+    background: rgba(20, 27, 51, 0.9);
+}
+
+.hero-card input::placeholder {
+    color: #4a5a7a;
+    text-align: left;
+}
+
+.hero-card .error {
+    color: #ff6b6b;
+    font-size: 13px;
+    animation: shake 0.4s ease-in-out;
+}
+
+.hero-hint {
+    margin-top: 16px;
+    color: #5a6a8a;
+    font-size: 12px;
+}
+
+/* ── Features Section ── */
+.features-section {
+    padding: 80px 0;
+    background: rgba(15, 12, 41, 0.5);
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.feature-card {
+    background: rgba(30, 39, 69, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-align: center;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(79, 140, 255, 0.3);
+}
+
+.feature-icon {
+    font-size: 36px;
+    display: block;
+    margin-bottom: 14px;
+}
+
+.feature-card h3 {
+    font-size: 18px;
+    color: #ffffff;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.feature-card p {
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.55;
+}
+
+/* ── How It Works ── */
+.how-section {
+    padding: 80px 0;
+}
+
+.steps-row {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+}
+
+.step-card {
+    background: rgba(30, 39, 69, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 32px 24px;
+    text-align: center;
+    flex: 1;
+    max-width: 300px;
+    position: relative;
+}
+
+.step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4f8cff, #7c5bfe);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+}
+
+.step-icon {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.step-card h3 {
+    font-size: 18px;
+    color: #ffffff;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.step-card p {
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.55;
+}
+
+.step-connector {
+    display: none;
+}
+
+/* ── SEO Content Section ── */
+.seo-section {
+    padding: 80px 0;
+    background: rgba(15, 12, 41, 0.5);
+}
+
+.seo-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.seo-block {
+    margin-bottom: 32px;
+}
+
+.seo-block h3 {
+    font-size: 20px;
+    color: #c084fc;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.seo-block p {
+    font-size: 15px;
+    color: #b0b9c8;
+    line-height: 1.7;
+}
+
+.seo-block strong {
+    color: #e0e0e0;
+}
+
+/* ── CTA Banner ── */
+.cta-section {
+    padding: 64px 0;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(79, 140, 255, 0.1), rgba(192, 132, 252, 0.1));
+}
+
+.cta-section h2 {
+    font-size: 32px;
+    color: #ffffff;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.cta-section p {
+    font-size: 16px;
+    color: #94a3b8;
+    margin-bottom: 28px;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 14px 36px;
+    background: linear-gradient(135deg, #4f8cff, #7c5bfe);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(79, 140, 255, 0.35);
+}
+
+/* ── Footer ── */
+.landing-footer {
+    padding: 48px 0 24px;
+    background: #0f0c29;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
+    gap: 40px;
+    margin-bottom: 32px;
+}
+
+.footer-col h4 {
+    font-size: 16px;
+    color: #ffffff;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.footer-col p {
+    font-size: 13px;
+    color: #8892b0;
+    line-height: 1.6;
+}
+
+.footer-col ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-col li {
+    margin-bottom: 8px;
+}
+
+.footer-col a {
+    color: #7c5bfe;
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s;
+}
+
+.footer-col a:hover {
+    color: #c084fc;
+    text-decoration: underline;
+}
+
+.footer-disclaimer {
+    font-size: 12px !important;
+    color: #6b7280 !important;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.footer-bottom p {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* ── Landing Page Responsive ── */
+@media (max-width: 900px) {
+    .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .steps-row {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .step-card {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .hero-title {
+        font-size: 36px;
+    }
+
+    .section-title {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 600px) {
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-title {
+        font-size: 28px;
+    }
+
+    .hero-subtitle {
+        font-size: 15px;
+    }
+
+    .hero-section {
+        padding: 60px 16px 40px;
+    }
+
+    .hero-card {
+        padding: 28px 20px;
+    }
+
+    .section-container {
+        padding: 0 16px;
+    }
+
+    .features-section,
+    .how-section,
+    .seo-section {
+        padding: 48px 0;
+    }
+
+    .cta-section h2 {
+        font-size: 24px;
+    }
+
+    .seo-block h3 {
+        font-size: 18px;
     }
 }
