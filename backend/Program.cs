@@ -110,6 +110,19 @@ using (var scope = app.Services.CreateScope())
     var stale = db.UserSessions.Where(s => s.EndedAt == null);
     foreach (var s in stale)
         s.EndedAt = DateTime.UtcNow;
+
+    // Safe migration: add IpAddress column to Messages if missing
+    try
+    {
+        db.Database.ExecuteSqlRaw(
+            "ALTER TABLE Messages ADD COLUMN IpAddress TEXT NULL;");
+        Console.WriteLine("Migration: added IpAddress column to Messages.");
+    }
+    catch
+    {
+        // Column already exists — ignore
+    }
+
     db.SaveChanges();
 }
 

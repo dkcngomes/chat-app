@@ -24,4 +24,8 @@ public class Message
     public string ImagePath { get; set; } = string.Empty;
 
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    /// <summary> Client IP address when this message was sent (compliance) </summary>
+    [MaxLength(45)]
+    public string? IpAddress { get; set; }
 }

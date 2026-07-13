@@ -216,10 +216,7 @@ public class ChatController : ControllerBase
     [HttpPost("sessions/start")]
     public async Task<ActionResult> StartSession([FromBody] StartSessionRequest? req)
     {
-        // Capture client IP
-        var ip = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
-                 ?? HttpContext.Connection.RemoteIpAddress?.ToString()
-                 ?? "unknown";
+        var ip = ClientIpHelper.GetIpAddress(HttpContext);
 
         _db.UserSessions.Add(new UserSession
         {

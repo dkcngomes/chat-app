@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
+using backend.Services;
 using System.Collections.Concurrent;
 using System.Security.Claims;
 
@@ -24,6 +25,24 @@ public class ChatHub : Hub
 
     private int UserId => int.Parse(Context.User!.FindFirstValue(ClaimTypes.NameIdentifier)!);
     private string UserName => Context.User!.FindFirstValue(ClaimTypes.Name)!;
+
+    /// <summary>
+    /// Get real client IP from the SignalR connection.
+    /// Checks HTTP context first (for WebSocket/negotiate), then falls back to the feature.
+    /// </summary>
+    private string ClientIp
+    {
+        get
+        {
+            var http = Context.GetHttpContext();
+            if (http != null)
+                return ClientIpHelper.GetIpAddress(http);
+
+            // Fallback: try the bare RemoteIp from the connection feature
+            var feature = Context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpConnectionFeature>();
+            return feature?.RemoteIpAddress?.ToString() ?? "unknown";
+        }
+    }
 
     public async Task JoinRoom(int roomId)
     {
@@ -67,7 +86,8 @@ public class ChatHub : Hub
             SenderId = UserId,
             Content = req.Content,
             MessageType = "text",
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
+            IpAddress = ClientIp
         };
 
         _db.Messages.Add(msg);
@@ -97,7 +117,8 @@ public class ChatHub : Hub
             Content = caption ?? "",
             MessageType = "image",
             ImagePath = imageUrl,
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
+            IpAddress = ClientIp
         };
 
         _db.Messages.Add(msg);

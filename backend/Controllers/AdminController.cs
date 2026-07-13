@@ -97,7 +97,8 @@ public class AdminController : ControllerBase
                 m.MessageType,
                 m.Content,
                 ImageUrl = ResolveImageUrl(m.ImagePath),
-                m.Timestamp
+                m.Timestamp,
+                m.IpAddress
             })
         });
     }
@@ -136,5 +137,63 @@ public class AdminController : ControllerBase
         if (string.IsNullOrEmpty(imagePath)) return null;
         if (imagePath.StartsWith("http") || imagePath.StartsWith("/")) return imagePath;
         return $"/uploads/{imagePath}";
+    }
+
+    /// <summary>
+    /// GET /api/admin/sessions?key=xxx — list all user sessions with IP and GPS data
+    /// </summary>
+    [HttpGet("sessions")]
+    public async Task<ActionResult> GetSessions()
+    {
+        if (!IsAuthorized())
+            return Unauthorized(new { error = "Invalid or missing admin key. Pass ?key=yourkey" });
+
+        var sessions = await _db.UserSessions
+            .Include(s => s.User)
+            .OrderByDescending(s => s.StartedAt)
+            .Select(s => new
+            {
+                s.Id,
+                Username = s.User.Username,
+                s.IpAddress,
+                s.Latitude,
+                s.Longitude,
+                s.StartedAt,
+                s.EndedAt,
+                s.Emailed
+            })
+            .ToListAsync();
+
+        return Ok(sessions);
+    }
+
+    /// <summary>
+    /// GET /api/admin/users?key=xxx — list all users with session count and last known IP
+    /// </summary>
+    [HttpGet("users")]
+    public async Task<ActionResult> GetUsers()
+    {
+        if (!IsAuthorized())
+            return Unauthorized(new { error = "Invalid or missing admin key. Pass ?key=yourkey" });
+
+        var users = await _db.Users
+            .Include(u => u.ChatRoomMembers)
+            .Select(u => new
+            {
+                u.Id,
+                u.Username,
+                u.CreatedAt,
+                RoomCount = u.ChatRoomMembers.Count,
+                SessionCount = _db.UserSessions.Count(s => s.UserId == u.Id),
+                LastSession = _db.UserSessions
+                    .Where(s => s.UserId == u.Id)
+                    .OrderByDescending(s => s.StartedAt)
+                    .Select(s => new { s.IpAddress, s.StartedAt })
+                    .FirstOrDefault()
+            })
+            .OrderByDescending(u => u.CreatedAt)
+            .ToListAsync();
+
+        return Ok(users);
     }
 }

@@ -32,6 +32,19 @@
   .tab-btn:hover { color: #ddd; background: #1e1e38; }
   .tab-btn.active { background: #6c5ce7; color: #fff; font-weight: 600; }
 
+  /* Audit / Sessions tables */
+  .audit-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .audit-table th { text-align: left; padding: 10px 12px; color: #888; font-weight: 600; border-bottom: 1px solid #2a2a3e; white-space: nowrap; }
+  .audit-table td { padding: 10px 12px; border-bottom: 1px solid #1a1a2e; }
+  .audit-table tr:hover td { background: #1e1e38; }
+  .audit-table .ip-cell { font-family: 'Courier New', monospace; color: #6c5ce7; font-size: 0.8rem; cursor: pointer; }
+  .audit-table .ip-cell:hover { text-decoration: underline; }
+  .geo-popup { position: absolute; background: #1a1a2e; border: 1px solid #6c5ce7; border-radius: 8px; padding: 8px 12px; font-size: 0.8rem; color: #ddd; z-index: 100; white-space: nowrap; max-width: 300px; }
+  .badge-active { background: #1a3a2a; color: #4ade80; padding: 2px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 600; }
+  .badge-ended { background: #2a2a3e; color: #888; padding: 2px 8px; border-radius: 8px; font-size: 0.7rem; }
+  .ip-msg { font-size: 0.7rem; color: #555; margin-top: 2px; font-family: 'Courier New', monospace; cursor: pointer; }
+  .ip-msg:hover { color: #6c5ce7; }
+
   /* Stats */
   .stats { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
   .stat-card { background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 10px; padding: 16px 24px; flex: 1; min-width: 140px; }
@@ -335,6 +348,8 @@ function renderTabs(activeTab) {
   return '<div class="tab-bar">' +
     '<button class="tab-btn' + (activeTab === 'rooms' ? ' active' : '') + '" onclick="switchTab(\'rooms\')">\uD83D\uDCCB Rooms</button>' +
     '<button class="tab-btn' + (activeTab === 'gallery' ? ' active' : '') + '" onclick="switchTab(\'gallery\')">\uD83D\uDCF7 Gallery</button>' +
+    '<button class="tab-btn' + (activeTab === 'audit' ? ' active' : '') + '" onclick="switchTab(\'audit\')">\uD83D\uDCCB Audit</button>' +
+    '<button class="tab-btn' + (activeTab === 'users' ? ' active' : '') + '" onclick="switchTab(\'users\')">\uD83D\uDC65 Users</button>' +
     '</div>';
 }
 
@@ -375,7 +390,8 @@ function renderMessages(room, msgs) {
         if (m.messageType === 'image' && m.imageUrl) {
           img = '<img src="' + imgSrc(m.imageUrl) + '" alt="chat image" />';
         }
-        return '<div class="msg"><div class="head"><span class="sender">' + esc(m.sender) + '</span><span class="time">' + fmtTime(m.timestamp) + '</span></div><div class="content">' + content + img + '</div></div>';
+        const ipLine = m.ipAddress ? '<div class="ip-msg" onclick="lookupIp(\'' + esc(m.ipAddress) + '\', this)" title="Click to look up location">IP: ' + esc(m.ipAddress) + '</div>' : '';
+        return '<div class="msg"><div class="head"><span class="sender">' + esc(m.sender) + '</span><span class="time">' + fmtTime(m.timestamp) + '</span></div><div class="content">' + content + img + ipLine + '</div></div>';
       }).join('');
   return '<div class="nav-bar"><button class="back-btn" onclick="backToRooms()">\u2190 Back to Rooms</button>' +
     '<div class="nav-actions"><div id="live-indicator" class="live-indicator ' + liveClass + '" onclick="toggleAutoRefresh()" title="Toggle auto-refresh">' +
@@ -427,10 +443,9 @@ function logout() {
 }
 
 async function switchTab(tab) {
-  if (tab === 'gallery' && state === 'gallery') return;
-  if (tab === 'rooms' && state === 'rooms') return;
+  if (tab === state) return;
   stopRefresh();
-  state = tab === 'gallery' ? 'gallery' : 'rooms';
+  state = tab;
   currentRoomId = null;
   await render();
 }
@@ -462,6 +477,12 @@ async function render() {
       const images = await fetchJson('/gallery');
       app.innerHTML = renderGallery(images);
       startRefresh(refreshGallery);
+    } else if (state === 'audit') {
+      const sessions = await fetchJson('/sessions');
+      app.innerHTML = renderAudit(sessions);
+    } else if (state === 'users') {
+      const users = await fetchJson('/users');
+      app.innerHTML = renderUsers(users);
     } else {
       state = 'rooms';
       const rooms = await fetchJson('/rooms');
@@ -473,6 +494,90 @@ async function render() {
     if (!adminKey) { app.innerHTML = renderLogin(err.message); }
     else { app.innerHTML = '<div class="login-box"><div class="error">Error: ' + esc(err.message) + '</div><button onclick="render()" style="margin-top:16px;padding:8px 24px;border:none;border-radius:6px;background:#6c5ce7;color:#fff;cursor:pointer">Retry</button></div>'; }
   }
+}
+
+// ── Audit: Session & User Display ──
+
+function lookupIp(ip, el) {
+  // Toggle existing popup
+  const existing = el.querySelector('.geo-popup');
+  if (existing) { existing.remove(); return; }
+  
+  // Remove any other popups
+  document.querySelectorAll('.geo-popup').forEach(p => p.remove());
+  
+  const popup = document.createElement('div');
+  popup.className = 'geo-popup';
+  popup.textContent = 'Looking up...';
+  popup.style.position = 'absolute';
+  el.style.position = 'relative';
+  el.appendChild(popup);
+  
+  // Use free ipapi.co
+  fetch('https://ipapi.co/' + ip + '/json/')
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        popup.textContent = data.reason || 'Lookup failed';
+      } else {
+        const parts = [data.city, data.region, data.country_name].filter(Boolean);
+        popup.textContent = parts.join(', ') + ' | ISP: ' + (data.org || data.asn || '?');
+      }
+    })
+    .catch(() => {
+      popup.textContent = 'Lookup unavailable';
+    });
+  
+  // Auto-remove after 6s
+  setTimeout(() => { if (popup.parentNode) popup.remove(); }, 6000);
+}
+
+function renderAudit(sessions) {
+  const rows = sessions.map(s => {
+    const status = s.endedAt ? '<span class="badge-ended">Ended</span>' : '<span class="badge-active">Active</span>';
+    const duration = s.endedAt ? ago(s.endedAt) + ' session' : (ago(s.startedAt) + ' ongoing');
+    const gps = (s.latitude && s.longitude) 
+      ? '<a href="https://www.google.com/maps?q=' + s.latitude + ',' + s.longitude + '" target="_blank" title="Open in Google Maps">\uD83D\uDCCD</a>'
+      : '';
+    return '<tr>' +
+      '<td>' + esc(s.username) + '</td>' +
+      '<td class="ip-cell" onclick="lookupIp(\'' + esc(s.ipAddress) + '\', this)">' + esc(s.ipAddress || '—') + '</td>' +
+      '<td>' + gps + '</td>' +
+      '<td>' + fmtTime(s.startedAt) + '</td>' +
+      '<td>' + (s.endedAt ? fmtTime(s.endedAt) : '—') + '</td>' +
+      '<td>' + status + '</td>' +
+      '<td>' + duration + '</td>' +
+      '</tr>';
+  }).join('');
+  
+  return renderTabs('audit') +
+    '<div class="nav-bar"><h1>\uD83D\uDCCB Sessions Audit</h1><div class="nav-actions">' +
+    '<span style="color:#888;font-size:0.8rem">' + sessions.length + ' sessions logged</span></div></div>' +
+    '<div style="overflow-x:auto"><table class="audit-table"><thead><tr>' +
+    '<th>User</th><th>IP Address</th><th></th><th>Started</th><th>Ended</th><th>Status</th><th>Duration</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<div style="margin-top:12px;font-size:0.75rem;color:#555">Click an IP address to look up its geographic location via ipapi.co (free, rate limited).</div>';
+}
+
+function renderUsers(users) {
+  const rows = users.map(u => {
+    const last = u.lastSession || {};
+    return '<tr>' +
+      '<td><strong>' + esc(u.username) + '</strong></td>' +
+      '<td>' + u.sessionCount + '</td>' +
+      '<td>' + u.roomCount + '</td>' +
+      '<td>' + fmtTime(u.createdAt) + '</td>' +
+      '<td class="ip-cell" onclick="lookupIp(\'' + esc(last.ipAddress || '') + '\', this)">' + esc(last.ipAddress || '—') + '</td>' +
+      '<td>' + (last.startedAt ? ago(last.startedAt) : '—') + '</td>' +
+      '</tr>';
+  }).join('');
+  
+  return renderTabs('users') +
+    '<div class="nav-bar"><h1>\uD83D\uDC65 Registered Users</h1><div class="nav-actions">' +
+    '<span style="color:#888;font-size:0.8rem">' + users.length + ' users</span></div></div>' +
+    '<div style="overflow-x:auto"><table class="audit-table"><thead><tr>' +
+    '<th>Username</th><th>Sessions</th><th>Rooms</th><th>Registered</th><th>Last IP</th><th>Last Seen</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 // ── Boot ──
